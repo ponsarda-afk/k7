@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#14161f"/>
+  <rect x="56" y="126" width="400" height="260" rx="26" fill="#ff8a1f"/>
+  <rect x="84" y="150" width="344" height="128" rx="12" fill="#f2e8cf"/>
+  <rect x="84" y="232" width="344" height="6" fill="#e94f37"/>
+  <rect x="84" y="242" width="344" height="6" fill="#33a1fd"/>
+  <text x="104" y="210" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="54" fill="#14161f">K7</text>
+  <rect x="150" y="256" width="212" height="70" rx="16" fill="#14161f"/>
+  <circle cx="200" cy="291" r="26" fill="#3b2516"/><circle cx="312" cy="291" r="18" fill="#3b2516"/>
+  <circle cx="200" cy="291" r="13" fill="#f0f0f0"/><circle cx="312" cy="291" r="13" fill="#f0f0f0"/>
+  <circle cx="200" cy="291" r="6" fill="#14161f"/><circle cx="312" cy="291" r="6" fill="#14161f"/>
+  <path d="M120 386 L146 340 H366 L392 386 Z" fill="#14161f" opacity=".55"/>
+</svg>

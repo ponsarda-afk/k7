@@ -1,0 +1,1352 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14161f">
+<title>K7 Baladeur</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=VT323&family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#14161f; --bg2:#1c1f2b; --card:#232736; --line:#323850;
+  --ink:#eef1f7; --muted:#9099b0; --accent:#ff8a1f; --accent2:#ffb347;
+  --blue:#3d74e0; --lcd:#a9c0a6; --lcdink:#1d2b1f; --ok:#5ec27a; --warn:#e9b33c; --bad:#e2574c;
+  --r:14px;
+  --ui:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --hand:"Permanent Marker","Comic Sans MS",cursive;
+  --lcdf:"VT323",ui-monospace,"DejaVu Sans Mono",monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px}
+body{min-height:100dvh;background:
+  radial-gradient(1200px 600px at 80% -10%,#24304d 0,transparent 60%),
+  radial-gradient(800px 500px at -10% 110%,#2d1f2a 0,transparent 60%),var(--bg);background-attachment:fixed}
+button{font:inherit;color:inherit;cursor:pointer}
+input,select{font:inherit;color:var(--ink);background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:9px 11px;outline:none}
+input:focus,select:focus{border-color:var(--blue)}
+.hide{display:none!important}
+
+/* ---------- barre du haut ---------- */
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));
+  background:rgba(20,22,31,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:.06em}
+.logo svg{width:34px;height:22px}
+.logo small{display:block;font-weight:400;color:var(--muted);font-size:11px;letter-spacing:.12em}
+.top .sp{flex:1}
+.ib{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 11px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.ib:active{transform:translateY(1px)}
+.ib.acc{background:var(--accent);border-color:var(--accent);color:#1a1006;font-weight:700}
+
+/* ---------- bibliothèque ---------- */
+main{max-width:1200px;margin:0 auto;padding:14px 16px 110px}
+.resume{display:flex;gap:14px;align-items:center;background:linear-gradient(135deg,#2a3352,#232736);border:1px solid var(--line);border-radius:18px;padding:12px;margin-bottom:14px}
+.resume .cv{width:64px;height:64px;border-radius:10px;flex:none;background:#333 center/cover}
+.resume .t{flex:1;min-width:0}
+.resume .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:16px}
+.resume .t span{color:var(--muted);font-size:13px}
+.bigplay{width:54px;height:54px;border-radius:50%;border:none;background:var(--accent);color:#1a1006;font-size:22px;flex:none;box-shadow:0 4px 0 #b65c0c}
+.bigplay:active{transform:translateY(3px);box-shadow:0 1px 0 #b65c0c}
+.pbar{height:5px;border-radius:3px;background:#0005;margin-top:7px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--accent)}
+
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.tools input[type=search]{flex:1;min-width:160px}
+.chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--bg2);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
+.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.chip .n{opacity:.7;margin-left:4px;font-size:11px}
+.grp{margin:18px 0 8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);display:flex;align-items:center;gap:10px}
+.grp:after{content:"";flex:1;height:1px;background:var(--line)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:14px}
+.tape{background:none;border:none;padding:0;text-align:left;position:relative;transition:transform .15s}
+.tape:hover{transform:translateY(-3px) rotate(-.6deg)}
+.tape svg{width:100%;height:auto;display:block;filter:drop-shadow(0 6px 8px #0007)}
+.tape .meta{padding:6px 2px 0;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:6px}
+.tape .meta b{color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st{font-size:10px;padding:1px 6px;border-radius:6px;background:#0004;white-space:nowrap}
+.empty{text-align:center;color:var(--muted);padding:50px 10px;line-height:1.6}
+.empty .ib{margin:6px}
+
+/* mini lecteur */
+.mini{position:fixed;left:0;right:0;bottom:0;z-index:25;display:flex;align-items:center;gap:10px;padding:9px 14px;padding-bottom:max(9px,env(safe-area-inset-bottom));
+  background:rgba(28,31,43,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);cursor:pointer}
+.mini .cv{width:42px;height:42px;border-radius:7px;background:#333 center/cover;flex:none}
+.mini .t{flex:1;min-width:0;font-size:13px}
+.mini .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini .t span{color:var(--muted)}
+.mini button{border:none;background:var(--accent);color:#1a1006;width:42px;height:42px;border-radius:50%;font-size:17px;flex:none}
+
+/* ---------- baladeur ---------- */
+#deck{max-width:470px;margin:0 auto;padding:12px 14px 40px}
+.wm{position:relative;border-radius:26px 26px 30px 30px;padding:16px 16px 18px;
+  background:
+   repeating-linear-gradient(90deg,#ffffff07 0 1px,transparent 1px 3px),
+   linear-gradient(170deg,#d6dce6 0%,#aab4c4 45%,#8590a3 100%);
+  box-shadow:inset 0 2px 0 #fff9,inset 0 -3px 0 #0003,0 22px 40px #000a,0 2px 0 #5c6577;color:#232a38}
+.keys{display:grid;grid-template-columns:.8fr 1fr 1fr 1.3fr 1fr 1fr;gap:6px;margin:-34px 6px 14px;position:relative;z-index:2}
+.key{height:48px;border:none;border-radius:8px 8px 4px 4px;font-size:16px;color:#e8ecf3;
+  background:linear-gradient(#4b5263,#2d323e);box-shadow:inset 0 2px 0 #ffffff30,0 6px 0 #1a1d25,0 8px 10px #0006;transition:transform .06s,box-shadow .06s}
+.key small{display:block;font-size:8px;letter-spacing:.1em;opacity:.7;margin-top:1px}
+.key:active,.key.down{transform:translateY(5px);box-shadow:inset 0 2px 0 #ffffff20,0 1px 0 #1a1d25,0 2px 4px #0006}
+.key.play{background:linear-gradient(#ff9e3d,#e06d0b);color:#2a1300;box-shadow:inset 0 2px 0 #fff6,0 6px 0 #8e4307,0 8px 10px #0006}
+.key.play:active,.key.play.down{box-shadow:inset 0 2px 0 #fff4,0 1px 0 #8e4307}
+.brand{display:flex;justify-content:space-between;align-items:flex-end;font-size:10px;letter-spacing:.2em;font-weight:800;margin:0 4px 8px}
+.brand b{font-size:15px;letter-spacing:.12em}
+.brand em{font-style:normal;color:#b2470a}
+.win{position:relative;border-radius:16px;padding:10px;background:linear-gradient(#20242e,#0f1117);box-shadow:inset 0 3px 10px #000c,0 1px 0 #fff8}
+.win:after{content:"";position:absolute;inset:0;border-radius:16px;pointer-events:none;
+  background:linear-gradient(115deg,#ffffff1c 0%,transparent 35%,transparent 70%,#ffffff0c 100%)}
+.win svg{display:block;width:100%;height:auto}
+.lcd{margin:14px 2px 0;border-radius:10px;padding:8px 12px;background:linear-gradient(#b8cfb4,var(--lcd));color:var(--lcdink);
+  box-shadow:inset 0 2px 6px #0005,0 1px 0 #fff8;font-family:var(--lcdf);font-size:21px;line-height:1.05}
+.lcd .row{display:flex;justify-content:space-between;gap:8px;white-space:nowrap}
+.lcd .ch{overflow:hidden;text-overflow:ellipsis;max-width:70%}
+.lcd .dim{opacity:.55}
+.seek{position:relative;height:22px;margin-top:6px;cursor:pointer;touch-action:none}
+.seek .tr{position:absolute;left:0;right:0;top:9px;height:5px;border-radius:3px;background:#1d2b1f40}
+.seek .fl{position:absolute;left:0;top:9px;height:5px;border-radius:3px;background:var(--lcdink)}
+.seek .tk{position:absolute;top:9px;width:2px;height:5px;background:#1d2b1f55}
+.seek .kn{position:absolute;top:3px;width:6px;height:17px;margin-left:-3px;background:var(--lcdink);border-radius:2px}
+.panel{display:flex;align-items:center;gap:12px;margin:14px 4px 0}
+.dial{flex:1}
+.dial label{display:flex;justify-content:space-between;font-size:10px;font-weight:800;letter-spacing:.16em;margin-bottom:4px}
+.dial input[type=range]{width:100%;padding:0;border:none;background:none;accent-color:#b2470a;height:22px}
+.counter{display:flex;gap:2px;padding:4px;border-radius:6px;background:#1b1f28;box-shadow:inset 0 2px 4px #000}
+.counter span{width:15px;height:24px;border-radius:2px;background:linear-gradient(#f4f4f4,#cfcfcf 50%,#f0f0f0);color:#111;font-family:var(--lcdf);font-size:22px;line-height:24px;text-align:center}
+.minis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 2px 0}
+.mk{border:none;border-radius:10px;padding:8px 2px 6px;font-size:18px;background:linear-gradient(#e8ecf2,#b9c1ce);color:#2a303d;box-shadow:inset 0 1px 0 #fff,0 3px 0 #6f7889}
+.mk small{display:block;font-size:9px;font-weight:800;letter-spacing:.08em;margin-top:3px}
+.mk:active{transform:translateY(2px);box-shadow:0 1px 0 #6f7889}
+.mk.on{background:linear-gradient(#ffb469,#ff8a1f)}
+.grill{height:14px;margin:16px 30% 0;border-radius:7px;background:radial-gradient(circle,#404858 1.4px,transparent 1.8px) 0 0/7px 7px}
+.decktop{display:flex;align-items:center;gap:10px;margin:2px 0 48px}
+.decktop .t{flex:1;min-width:0}
+.decktop .t b{display:block;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.decktop .t span{color:var(--muted);font-size:13px}
+
+/* ---------- feuilles (sheets) ---------- */
+.veil{position:fixed;inset:0;z-index:50;background:#0009;display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:560px;max-height:88dvh;overflow:auto;background:var(--bg2);border:1px solid var(--line);border-bottom:none;
+  border-radius:20px 20px 0 0;padding:16px 16px max(18px,env(safe-area-inset-bottom));animation:up .18s ease-out}
+@media(min-width:700px){.veil{align-items:center}.sheet{border-radius:20px;border-bottom:1px solid var(--line)}}
+@keyframes up{from{transform:translateY(30px);opacity:.4}}
+.sheet h3{margin:0 0 12px;font-size:18px;display:flex;align-items:center;gap:8px}
+.sheet h3 .x{margin-left:auto;background:none;border:none;font-size:22px;color:var(--muted)}
+.fld{display:block;margin-bottom:11px}
+.fld>span{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.fld input,.fld select{width:100%}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1px solid var(--line);background:var(--card);border-radius:9px;padding:7px 10px;font-size:13px}
+.seg button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.sw{width:30px;height:30px;border-radius:8px;border:2px solid transparent}
+.sw.on{border-color:#fff;box-shadow:0 0 0 2px var(--blue)}
+.list{display:flex;flex-direction:column;gap:2px}
+.li{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:none;border:none;text-align:left;width:100%}
+.li:hover{background:var(--card)}
+.li.cur{background:#3d74e033;outline:1px solid var(--blue)}
+.li .n{color:var(--muted);font-family:var(--lcdf);font-size:18px;width:30px;flex:none}
+.li .tt{flex:1;min-width:0}
+.li .tt b{font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li .tt span{font-size:12px;color:var(--muted)}
+.li .d{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.danger{color:var(--bad)!important;border-color:#e2574c66!important}
+.note{font-size:12.5px;color:var(--muted);line-height:1.5}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:80;background:#000d;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;max-width:90vw;text-align:center}
+.cvpick{display:flex;gap:12px;align-items:center}
+.cvpick .cv{width:70px;height:70px;border-radius:10px;background:#333 center/cover;flex:none}
+.stars button{background:none;border:none;font-size:24px;color:#555;padding:0 2px}
+.stars button.on{color:var(--warn)}
+.tape .dbtn{position:absolute;bottom:34px;right:6px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:15px;
+  background:#000a;color:#fff;border:1px solid #ffffff44;font-weight:700}
+.tape .dbtn.has{background:var(--blue)}
+.dhead{display:flex;gap:14px;align-items:flex-start;margin-bottom:10px}
+.dhead .cv{width:88px;height:88px;border-radius:10px;background:#333 center/cover;flex:none}
+.dhead .dt{font-size:19px;display:block;margin-bottom:3px}
+.dhead a,.dbody a{color:var(--accent2)}
+.dchip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:3px 10px;font-size:12.5px}
+.dsec{border-top:1px solid var(--line);padding:6px 0}
+.dsec>summary{cursor:pointer;font-weight:700;padding:8px 0;list-style:none;display:flex;gap:8px;align-items:center}
+.dsec>summary::-webkit-details-marker{display:none}
+.dsec>summary:after{content:"▾";margin-left:auto;color:var(--muted);transition:transform .15s}
+.dsec:not([open])>summary:after{transform:rotate(-90deg)}
+.dbody{line-height:1.55;font-size:14.5px}
+.dbody p{margin:6px 0}
+.dcard{background:var(--card);border-radius:10px;padding:8px 11px;margin:6px 0}
+.dcard p{margin:4px 0 0}
+@media(prefers-reduced-motion:reduce){.tape:hover{transform:none}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="logo" id="goLib" role="button">
+    <svg viewBox="0 0 34 22"><rect x="1" y="1" width="32" height="20" rx="3" fill="#ff8a1f"/><rect x="5" y="4" width="24" height="9" rx="1.5" fill="#f2e8cf"/><circle cx="11" cy="10" r="2.6" fill="#14161f"/><circle cx="23" cy="10" r="2.6" fill="#14161f"/><path d="M8 21l2-5h14l2 5" fill="#14161f55"/></svg>
+    <div>K7<small>BALADEUR DE POCHE</small></div>
+  </div>
+  <div class="sp"></div>
+  <button class="ib acc" id="btnImport">＋ Ajouter</button>
+  <button class="ib" id="btnSettings" title="Réglages">⚙</button>
+</header>
+
+<!-- ===================== BIBLIOTHÈQUE ===================== -->
+<main id="lib">
+  <div id="resume"></div>
+  <div class="tools">
+    <input type="search" id="q" placeholder="Chercher titre, auteur, narrateur…">
+    <select id="sort" title="Trier">
+      <option value="last">Dernière écoute</option>
+      <option value="title">Titre</option>
+      <option value="author">Auteur</option>
+      <option value="added">Ajout récent</option>
+      <option value="progress">Progression</option>
+      <option value="duration">Durée</option>
+      <option value="year">Année de parution</option>
+    </select>
+    <select id="group" title="Ranger par">
+      <option value="none">Pas de rayon</option>
+      <option value="author">Rayon : auteur</option>
+      <option value="shelf">Rayon : étagère</option>
+      <option value="status">Rayon : statut</option>
+      <option value="series">Rayon : série (ordre de lecture)</option>
+      <option value="genre">Rayon : genre</option>
+      <option value="decade">Rayon : chronologie (décennies)</option>
+    </select>
+  </div>
+  <div class="chips" id="statusChips"></div>
+  <div class="chips" id="shelfChips"></div>
+  <div id="shelf"></div>
+</main>
+
+<!-- ===================== BALADEUR ===================== -->
+<section id="deck" class="hide">
+  <div class="decktop">
+    <button class="ib" id="deckBack">◀ Étagère</button>
+    <div class="t"><b id="dTitle">—</b><span id="dAuthor"></span></div>
+  </div>
+  <div class="wm">
+    <div class="keys">
+      <button class="key" data-k="prevch" title="Chapitre précédent">⏮<small>CHAP</small></button>
+      <button class="key" data-k="rew" title="Retour (maintenir = rembobiner)">◀◀<small id="lblRew">-15</small></button>
+      <button class="key" data-k="stop" title="Stop">■<small>STOP</small></button>
+      <button class="key play" data-k="play" title="Lecture / pause">▶<small>PLAY</small></button>
+      <button class="key" data-k="ff" title="Avance (maintenir = avance rapide)">▶▶<small id="lblFf">+30</small></button>
+      <button class="key" data-k="nextch" title="Chapitre suivant">⏭<small>CHAP</small></button>
+    </div>
+    <div class="brand"><b>K7·88</b><span>AUTO-STOP · <em>TYPE II</em> · STÉRÉO</span></div>
+    <div class="win"><svg id="cass" viewBox="0 0 400 252"></svg></div>
+    <div class="lcd">
+      <div class="row"><span class="ch" id="lChap">—</span><span id="lChapT">0:00</span></div>
+      <div class="seek" id="seek"><div class="tr"></div><div id="ticks"></div><div class="fl" id="seekFl"></div><div class="kn" id="seekKn"></div></div>
+      <div class="row"><span id="lPos">0:00:00</span><span class="dim" id="lPct">0%</span><span id="lLeft">-0:00:00</span></div>
+      <div class="row" style="font-size:17px"><span id="lSpeed">×1.00</span><span id="lSleep" class="dim"></span><span id="lState">STOP</span></div>
+    </div>
+    <div class="panel">
+      <div class="dial">
+        <label><span>VITESSE</span><span id="spdV">1.00</span></label>
+        <input type="range" id="spd" min="0.5" max="3" step="0.05" value="1">
+      </div>
+      <div class="counter" id="counter"><span>0</span><span>0</span><span>0</span></div>
+      <div class="dial" style="flex:.8">
+        <label><span>VOLUME</span><span id="volV">10</span></label>
+        <input type="range" id="vol" min="0" max="1" step="0.02" value="1">
+      </div>
+    </div>
+    <div class="minis">
+      <button class="mk" id="mChap">☰<small>CHAPITRES</small></button>
+      <button class="mk" id="mMark">🔖<small>SIGNET +</small></button>
+      <button class="mk" id="mMarks">📑<small>SIGNETS</small></button>
+      <button class="mk" id="mSleep">☾<small>MINUTERIE</small></button>
+      <button class="mk" id="mInfo">✎<small>FICHE</small></button>
+      <button class="mk" id="mDos">📖<small>DOSSIER</small></button>
+    </div>
+    <div class="grill"></div>
+  </div>
+</section>
+
+<div class="mini hide" id="mini">
+  <div class="cv" id="miniCv"></div>
+  <div class="t"><b id="miniT"></b><span id="miniS"></span></div>
+  <button id="miniPlay">▶</button>
+</div>
+
+<div id="veil" class="veil hide"><div class="sheet" id="sheet"></div></div>
+<input type="file" id="fFiles" multiple accept="audio/*,.m4b,.m4a,.mp3,.ogg,.opus,.flac,image/*" class="hide">
+<input type="file" id="fDir" webkitdirectory multiple class="hide">
+<input type="file" id="fCover" accept="image/*" class="hide">
+
+<script>
+"use strict";
+/* ================================================================
+   Outils
+   ================================================================ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const natkey = s => String(s).toLowerCase().split(/(\d+)/).map(t => /^\d+$/.test(t) ? t.padStart(12, "0") : t).join("");
+const natcmp = (a, b) => natkey(a) < natkey(b) ? -1 : natkey(a) > natkey(b) ? 1 : 0;
+function fmt(s, forceH){ s = Math.max(0, Math.floor(s || 0)); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60;
+  return (h || forceH) ? `${h}:${String(m).padStart(2,"0")}:${String(x).padStart(2,"0")}` : `${m}:${String(x).padStart(2,"0")}`; }
+function fmtLong(s){ s = Math.round(s||0); const h = Math.floor(s/3600), m = Math.round(s%3600/60); return h ? `${h} h ${String(m).padStart(2,"0")}` : `${m} min`; }
+function toast(msg, ms=2600){ const t = document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(), ms); }
+function hashCol(id){ let h=0; for (const c of id) h = (h*31 + c.charCodeAt(0))|0; return LABELS[Math.abs(h)%LABELS.length][0]; }
+const AUDIO_RE = /\.(mp3|m4a|m4b|ogg|oga|opus|flac|wav|aac|webm|mka)$/i;
+const IMG_RE = /\.(jpe?g|png|webp)$/i;
+const LABELS = [["#f2e8cf","Crème"],["#e94f37","Rouge"],["#f6ae2d","Moutarde"],["#33a1fd","Bleu"],["#7bc950","Vert"],
+  ["#c879ff","Violet"],["#ff7eb6","Rose"],["#2b2f3a","Chrome noir"],["#f4f4f4","Blanc"],["#ff8a1f","Orange"]];
+const STATUS = {"a-lire":"À écouter","en-cours":"En cours","termine":"Terminé","abandon":"Abandonné"};
+const STATUS_COL = {"a-lire":"#9099b0","en-cours":"#ff8a1f","termine":"#5ec27a","abandon":"#e2574c"};
+const darkLabel = c => { const n = parseInt(c.slice(1),16); return ((n>>16)*.299 + ((n>>8)&255)*.587 + (n&255)*.114) < 120; };
+
+/* ================================================================
+   Stockage : deux moteurs (serveur Titine / local IndexedDB Pixel)
+   ================================================================ */
+const IDB = {
+  db: null,
+  open(){ return new Promise((res, rej) => { const r = indexedDB.open("k7", 2);
+    r.onupgradeneeded = () => { for (const n of ["books","files","covers","kv","info"]) if (!r.result.objectStoreNames.contains(n)) r.result.createObjectStore(n); };
+    r.onsuccess = () => { this.db = r.result; res(); }; r.onerror = () => rej(r.error); }); },
+  req(store, mode, fn){ return new Promise((res, rej) => { const t = this.db.transaction(store, mode); let out;
+    const r = fn(t.objectStore(store)); if (r) r.onsuccess = () => out = r.result;
+    t.oncomplete = () => res(out); t.onerror = t.onabort = () => rej(t.error); }); },
+  get(s,k){ return this.req(s,"readonly",o=>o.get(k)); },
+  put(s,k,v){ return this.req(s,"readwrite",o=>o.put(v,k)); },
+  del(s,k){ return this.req(s,"readwrite",o=>o.delete(k)); },
+  all(s){ return this.req(s,"readonly",o=>o.getAll()); },
+};
+
+let STATE = {books:{}, settings:{}};
+let BOOKS = [];
+let BE = null;
+
+const LocalBE = {
+  mode: "local", urls: {},
+  async load(){ await IDB.open(); STATE = (await IDB.get("kv","state")) || {books:{}, settings:{}};
+    STATE.books ||= {}; STATE.settings ||= {};
+    BOOKS = ((await IDB.all("books")) || []).map(b => ({...b, src:"local"})); },
+  _t: null,
+  persist(){ clearTimeout(this._t); this._t = setTimeout(() => IDB.put("kv","state",STATE).catch(e => toast("Erreur de sauvegarde : "+e)), 400); },
+  async audioSrc(b, i){ const f = await IDB.get("files", `${b.id}/${i}`); if (!f) throw new Error("Fichier absent");
+    if (this.urls.audio) URL.revokeObjectURL(this.urls.audio); return this.urls.audio = URL.createObjectURL(f); },
+  coverCache: {},
+  coverSrc(b){ return b.has_cover ? (this.coverCache[b.id] || null) : null; },
+  async warmCovers(){ for (const b of BOOKS) if (b.has_cover && !this.coverCache[b.id]) {
+      const c = await IDB.get("covers", b.id); if (c) this.coverCache[b.id] = URL.createObjectURL(c); } },
+  saveBook(){ this.persist(); },
+  saveSettings(){ this.persist(); },
+  reportDuration(b, i, d){ b.durations[i] = d; b.duration = b.durations.reduce((a,x)=>a+x,0);
+    if (b.chapters.length === b.files.length) b.chapters[i].end = d; this.saveMeta(b); },
+  saveMeta(b){ const {src, ...m} = b; return IDB.put("books", b.id, m); },
+  async remove(b){ for (let i=0;i<b.files.length;i++) await IDB.del("files", `${b.id}/${i}`);
+    await IDB.del("covers", b.id); await IDB.del("books", b.id); delete STATE.books[b.id]; this.persist(); },
+};
+
+const S = () => STATE.settings;
+const bs = id => (STATE.books[id] ||= {});
+function setBook(id, patch){ const st = bs(id); for (const [k,v] of Object.entries(patch)) { if (v == null) delete st[k]; else st[k] = v; } BE.saveBook(id, patch); }
+function setSetting(patch){ Object.assign(STATE.settings, patch); BE.saveSettings(patch); }
+const bTitle = b => bs(b.id).title || b.title;
+const bAuthor = b => bs(b.id).author || b.author;
+const bNarr = b => bs(b.id).narrator ?? b.narrator ?? "";
+const bColor = b => bs(b.id).color || hashCol(b.id);
+const bStatus = b => bs(b.id).status || (bs(b.id).pos && (bs(b.id).pos.file || bs(b.id).pos.t > 5) ? "en-cours" : "a-lire");
+const bShelves = b => bs(b.id).shelves || [];
+const bDur = b => (b.durations || []).reduce((a,x) => a + (x||0), 0);
+function bPosSec(b){ const p = bs(b.id).pos; if (!p) return 0; let s = 0; for (let i=0;i<p.file;i++) s += b.durations[i]||0; return s + (p.t||0); }
+function bProg(b){ if (bStatus(b) === "termine") return 1; const d = bDur(b); return d ? Math.min(1, bPosSec(b)/d) : 0; }
+
+/* ================================================================
+   Lecture des tags (ID3v2 / MP4) côté navigateur — mode autonome
+   ================================================================ */
+const sliceBuf = (blob, a, n) => blob.slice(a, a+n).arrayBuffer();
+function decText(u8, enc){
+  if (enc === 1 || enc === 2) { let le = enc === 1; let o = 0;
+    if (u8[0] === 0xFF && u8[1] === 0xFE) { le = true; o = 2; } else if (u8[0] === 0xFE && u8[1] === 0xFF) { le = false; o = 2; }
+    return new TextDecoder(le ? "utf-16le" : "utf-16be").decode(u8.subarray(o)).replace(/\0+$/,""); }
+  return new TextDecoder(enc === 3 ? "utf-8" : "iso-8859-1").decode(u8).replace(/\0+$/,"");
+}
+async function readID3(file){
+  const h = new Uint8Array(await sliceBuf(file, 0, 10));
+  if (h[0] !== 0x49 || h[1] !== 0x44 || h[2] !== 0x33) return null;
+  const v = h[3], size = (h[6]<<21)|(h[7]<<14)|(h[8]<<7)|h[9];
+  const d = new Uint8Array(await sliceBuf(file, 10, size)); const tags = {}; let p = 0;
+  if (h[5] & 0x40) { p = v === 4 ? ((d[0]<<21)|(d[1]<<14)|(d[2]<<7)|d[3]) : 4 + ((d[0]<<24)|(d[1]<<16)|(d[2]<<8)|d[3]); }
+  const map = {TIT2:"title",TT2:"title",TALB:"album",TAL:"album",TPE1:"artist",TP1:"artist",TPE2:"album_artist",TP2:"album_artist",
+    TCOM:"composer",TCM:"composer",TCON:"genre",TCO:"genre",TYER:"year",TDRC:"year",TYE:"year"};
+  while (p < d.length - 10) {
+    let id, fs, hl;
+    if (v === 2) { id = String.fromCharCode(d[p],d[p+1],d[p+2]); fs = (d[p+3]<<16)|(d[p+4]<<8)|d[p+5]; hl = 6; }
+    else { id = String.fromCharCode(d[p],d[p+1],d[p+2],d[p+3]);
+      fs = v === 4 ? (d[p+4]<<21)|(d[p+5]<<14)|(d[p+6]<<7)|d[p+7] : ((d[p+4]<<24)|(d[p+5]<<16)|(d[p+6]<<8)|d[p+7])>>>0; hl = 10; }
+    if (!/^[A-Z0-9]{3,4}$/.test(id) || fs <= 0 || p + hl + fs > d.length) break;
+    const f = d.subarray(p+hl, p+hl+fs);
+    if (map[id]) tags[map[id]] ||= decText(f.subarray(1), f[0]).split("\0")[0].trim();
+    else if ((id === "APIC" || id === "PIC") && !tags.pic) {
+      const enc = f[0]; let q = 1, mime;
+      if (id === "PIC") { mime = "image/" + String.fromCharCode(f[1],f[2],f[3]).toLowerCase().replace("jpg","jpeg"); q = 4; }
+      else { const e = f.indexOf(0, 1); mime = new TextDecoder().decode(f.subarray(1, e)) || "image/jpeg"; q = e + 1; }
+      q++; // type d'image
+      if (enc === 1 || enc === 2) { while (q < f.length-1 && !(f[q] === 0 && f[q+1] === 0)) q += 2; q += 2; }
+      else { while (q < f.length && f[q] !== 0) q++; q++; }
+      if (!mime.includes("/")) mime = "image/jpeg";
+      tags.pic = new Blob([f.slice(q)], {type: mime});
+    }
+    p += hl + fs;
+  }
+  return tags;
+}
+async function readMP4(file){
+  const head = new Uint8Array(await sliceBuf(file, 4, 4));
+  if (String.fromCharCode(...head) !== "ftyp") return null;
+  let off = 0, moov = null;
+  while (off < file.size - 8) {
+    const hv = new DataView(await sliceBuf(file, off, 16)); let sz = hv.getUint32(0); const ty = String.fromCharCode(hv.getUint8(4),hv.getUint8(5),hv.getUint8(6),hv.getUint8(7));
+    if (sz === 1) sz = Number(hv.getBigUint64(8)); else if (sz === 0) sz = file.size - off;
+    if (sz < 8) break;
+    if (ty === "moov") { moov = new DataView(await sliceBuf(file, off, sz)); break; }
+    off += sz;
+  }
+  if (!moov) return {};
+  const tags = {}; const u8 = new Uint8Array(moov.buffer);
+  const kids = (s, e) => { const out = []; let p = s; while (p < e - 8) { let sz = moov.getUint32(p); const ty = String.fromCharCode(u8[p+4],u8[p+5],u8[p+6],u8[p+7]);
+      if (sz === 0) sz = e - p; if (sz < 8 || p + sz > e) break; out.push({ty, s:p, e:p+sz}); p += sz; } return out; };
+  const find = (list, ty) => list.find(a => a.ty === ty);
+  const top = kids(8, moov.byteLength);
+  const udta = find(top, "udta");
+  if (udta) {
+    const uk = kids(udta.s+8, udta.e);
+    const chpl = find(uk, "chpl");
+    if (chpl) { let p = chpl.s + 8; const ver = u8[p]; p += 4; if (ver) p += 4; const n = u8[p++]; const ch = [];
+      for (let i=0; i<n && p < chpl.e; i++) { const st = Number(moov.getBigUint64(p)) / 1e7; p += 8; const l = u8[p++];
+        ch.push({start: st, title: new TextDecoder().decode(u8.subarray(p, p+l))}); p += l; }
+      if (ch.length) tags.chapters = ch; }
+    const meta = find(uk, "meta");
+    if (meta) { const ilst = find(kids(meta.s+12, meta.e), "ilst");
+      if (ilst) for (const it of kids(ilst.s+8, ilst.e)) {
+        const data = find(kids(it.s+8, it.e), "data"); if (!data) continue;
+        const type = moov.getUint32(data.s+8) & 0xFFFFFF; const payload = u8.subarray(data.s+16, data.e);
+        const key = {"©nam":"title","©alb":"album","©ART":"artist","aART":"album_artist","©wrt":"composer","©gen":"genre","©day":"year"}[it.ty];
+        if (key) tags[key] = new TextDecoder().decode(payload).trim();
+        else if (it.ty === "covr" && !tags.pic) tags.pic = new Blob([payload.slice()], {type: type === 14 ? "image/png" : "image/jpeg"});
+      } }
+  }
+  return tags;
+}
+async function readTags(file){ try { return (await readID3(file)) || (await readMP4(file)) || {}; } catch(e) { console.warn(e); return {}; } }
+function mediaDuration(blob){
+  return new Promise(res => { const a = new Audio(); const u = URL.createObjectURL(blob); let done = false;
+    const fin = d => { if (done) return; done = true; URL.revokeObjectURL(u); a.src = ""; res(isFinite(d) && d > 0 ? d : 0); };
+    a.preload = "metadata";
+    a.onloadedmetadata = () => { if (isFinite(a.duration)) fin(a.duration); else { a.currentTime = 1e9; a.ondurationchange = () => isFinite(a.duration) && fin(a.duration); } };
+    a.onerror = () => fin(0); setTimeout(() => fin(a.duration), 20000); a.src = u; });
+}
+function splitAT(raw, tags, fromFolder = true, parent = ""){
+  let name = String(raw).replace(/\[[^\]]*\]/g, "").replace(/\{[^}]*\}/g, "").replace(/\s{2,}/g, " ").trim();
+  let series = null; const sm = name.match(/\(([^()]*?)\s*(?:tome|t\.|vol\.?|n°|#|-)?\s*(\d+(?:[.,]\d)?)\)\s*$/i);
+  if (sm && sm[1].trim()) { series = {label: sm[1].trim(), ord: sm[2].replace(",", ".")}; name = name.slice(0, sm.index).trim(); }
+  else name = name.replace(/\((?:livre audio|audio|int[ée]gral|lu par[^)]*)\)/gi, "").trim();
+  let author = "", title = name; const m = fromFolder && name.match(/^(.+?)\s+[-–—]\s+(.+)$/);
+  if (m) { author = m[1].trim(); title = m[2].trim(); }
+  if (!author && parent && !SKIP_DIR.test(parent)) author = parent.replace(/\[[^\]]*\]/g, "").trim();
+  if (!fromFolder && tags.album) title = tags.album;
+  author ||= tags.album_artist || tags.artist || tags.composer || "";
+  return {author: author || "Auteur inconnu", title: title || tags.album || raw, series};
+}
+/* ================================================================
+   Import (mode autonome)
+   ================================================================ */
+async function importGroups(groups){
+  const veil = openSheet(`<h3>Import en cours…</h3><div class="note" id="impMsg">Préparation</div><div class="pbar"><i id="impBar" style="width:0"></i></div>`, false);
+  const total = groups.reduce((a,g)=>a+g.audio.length,0); let done = 0; const made = [];
+  try { if (navigator.storage?.persist) await navigator.storage.persist(); } catch {}
+  for (const g of groups) {
+    const audio = g.audio.sort((a,b)=>natcmp(a.webkitRelativePath||a.name, b.webkitRelativePath||b.name));
+    const tags = await readTags(audio[0]);
+    // nom de dossier (ou fichier unique) = fiable pour « Auteur - Titre » ; plusieurs fichiers en vrac = on se fie aux tags
+    const single = audio.length === 1;
+    const {author, title, series} = splitAT(g.name || (single ? audio[0].name.replace(/\.[^.]+$/,"") : (tags.album || "Nouveau livre")), tags, !!g.name || single, g.parent || "");
+    const id = "L" + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+    const durations = [], chapters = [];
+    for (let i=0;i<audio.length;i++) {
+      const f = audio[i]; $("#impMsg").textContent = `${title} — ${f.name}`;
+      await IDB.put("files", `${id}/${i}`, f);
+      const t = i === 0 ? tags : await readTags(f);
+      if (!tags.pic && t.pic) tags.pic = t.pic;
+      const d = await mediaDuration(f); durations.push(d);
+      if (audio.length === 1 && t.chapters?.length) {
+        t.chapters.forEach((c, k) => chapters.push({file:0, start:c.start, end: t.chapters[k+1]?.start ?? d, title: c.title || `Chapitre ${k+1}`}));
+      } else { const sub = (f.webkitRelativePath || "").split("/").slice(-2, -1)[0] || ""; const pre = SUBPART.test(sub) ? sub + " · " : "";
+        chapters.push({file:i, start:0, end:d, title: pre + (t.title || f.name.replace(/\.[^.]+$/,""))}); }
+      done++; $("#impBar").style.width = (done/total*100) + "%";
+    }
+    let cover = g.images?.sort((a,b)=>{ const r = n => /cover|folder|front|pochette|couv/i.test(n.name) ? 0 : 1; return r(a)-r(b); })[0] || tags.pic || null;
+    if (cover) await IDB.put("covers", id, cover);
+    const meta = {id, title, author, narrator: tags.composer || "", genre: tags.genre || "", year: (tags.year||"").slice(0,4),
+      files: audio.map(f=>f.name), durations, duration: durations.reduce((a,x)=>a+x,0), chapters, has_cover: !!cover, mtime: Date.now()/1000, rel: g.path || g.name || title, series};
+    await IDB.put("books", id, meta); BOOKS.push({...meta, src:"local"}); made.push(meta);
+  }
+  await LocalBE.warmCovers(); closeSheet(); render();
+  toast(`${made.length} livre${made.length>1?"s":""} ajouté${made.length>1?"s":""}`);
+  if (made.length === 1) openBookSheet(BOOKS.find(b => b.id === made[0].id), true);
+  fillAll(true);
+}
+const SKIP_DIR = /^[!.]|statistics|\.thumbnails|^android$/i;
+const SUBPART = /^(cd|disc|disque|dvd|partie|part|vol(ume)?|tome)\s*[-_ ]?\d+$/i;
+function filesToGroups(list, byFolder){
+  const files = [...list]; const isA = f => AUDIO_RE.test(f.name) || f.type.startsWith("audio/");
+  const audio = files.filter(isA), images = files.filter(f => IMG_RE.test(f.name));
+  if (!audio.length) { toast("Aucun fichier audio dans la sélection"); return []; }
+  if (byFolder) {
+    const g = {};
+    const parts = f => (f.webkitRelativePath || f.name).split("/").slice(0, -1);
+    const bookDir = f => { let p = parts(f); if (p.some(x => SKIP_DIR.test(x))) return null;
+      while (p.length > 1 && SUBPART.test(p[p.length-1])) p = p.slice(0, -1);   // CD1/CD2 → même livre
+      return p; };
+    for (const f of audio) { const p = bookDir(f); if (!p) continue; const k = p.join("/");
+      if (p.length === 1) { const k2 = k + "/" + f.name; g[k2] = {name: f.name.replace(/\.[^.]+$/,""), parent: "", path: k2, audio: [f], images: []}; continue; } // fichier seul à la racine
+      (g[k] ||= {name: p[p.length-1], parent: p.length > 2 ? p[p.length-2] : "", path: k, audio: [], images: []}).audio.push(f); }
+    for (const f of images) { const p = bookDir(f); if (p) g[p.join("/")]?.images.push(f); }
+    // un dossier rempli uniquement de .m4b = un livre par m4b
+    for (const [k, v] of Object.entries(g)) if (v.audio.length > 1 && v.audio.every(f => /\.m4b$/i.test(f.name))) { delete g[k];
+      for (const f of v.audio) g[k + "/" + f.name] = {name: f.name.replace(/\.[^.]+$/,""), parent: v.name, path: k + "/" + f.name, audio: [f], images: v.images}; }
+    const known = new Set(BOOKS.map(b => b.rel));
+    const out = Object.values(g); const fresh = out.filter(x => !known.has(x.path));
+    if (out.length !== fresh.length) toast(`${out.length - fresh.length} livre(s) déjà sur l'étagère, ignorés`);
+    return fresh;
+  }
+  if (audio.length > 1 && audio.every(f => /\.m4b$/i.test(f.name)))
+    return audio.map(f => ({name: f.name.replace(/\.[^.]+$/,""), audio:[f], images:[]}));
+  return [{name: audio.length === 1 ? audio[0].name.replace(/\.[^.]+$/,"") : "", audio, images}];
+}
+$("#fFiles").onchange = e => { const g = filesToGroups(e.target.files, false); e.target.value = ""; if (g.length) importGroups(g); };
+$("#fDir").onchange = e => { const g = filesToGroups(e.target.files, true); e.target.value = ""; if (g.length) importGroups(g); };
+
+/* ================================================================
+   Sons mécaniques + souffle de bande (WebAudio, aucun fichier)
+   ================================================================ */
+let AC = null, hissNode = null, hissGain = null;
+function ac(){ if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume(); return AC; }
+function clunk(heavy){
+  if (S().clicks === false) return; const c = ac(), t = c.currentTime;
+  const n = c.createBufferSource(), b = c.createBuffer(1, c.sampleRate*0.06, c.sampleRate), d = b.getChannelData(0);
+  for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/d.length, 6);
+  n.buffer = b; const bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = heavy ? 1400 : 2600; bp.Q.value = 2;
+  const g = c.createGain(); g.gain.value = heavy ? .5 : .32; n.connect(bp).connect(g).connect(c.destination); n.start(t);
+  const o = c.createOscillator(), og = c.createGain(); o.frequency.setValueAtTime(heavy ? 120 : 180, t); o.frequency.exponentialRampToValueAtTime(50, t+.08);
+  og.gain.setValueAtTime(heavy ? .35 : .18, t); og.gain.exponentialRampToValueAtTime(.001, t+.09); o.connect(og).connect(c.destination); o.start(t); o.stop(t+.1);
+}
+function hiss(on){
+  if (!on || !S().hiss) { if (hissGain) hissGain.gain.setTargetAtTime(0, AC.currentTime, .1); return; }
+  const c = ac();
+  if (!hissNode) { const b = c.createBuffer(1, c.sampleRate*2, c.sampleRate), d = b.getChannelData(0);
+    for (let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+    hissNode = c.createBufferSource(); hissNode.buffer = b; hissNode.loop = true;
+    const hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 5000;
+    hissGain = c.createGain(); hissGain.gain.value = 0; hissNode.connect(hp).connect(hissGain).connect(c.destination); hissNode.start(); }
+  hissGain.gain.setTargetAtTime(0.012 * player.audio.volume, c.currentTime, .2);
+}
+
+/* ================================================================
+   Cassette SVG (grande + miniatures)
+   ================================================================ */
+const R_MIN = 16, R_MAX = 34;
+function packR(p){ return [Math.sqrt(R_MIN**2 + (R_MAX**2-R_MIN**2)*(1-p)), Math.sqrt(R_MIN**2 + (R_MAX**2-R_MIN**2)*p)]; }
+function hub(cx, cy, id){ let teeth = ""; for (let k=0;k<6;k++) teeth += `<rect x="-2.2" y="-13" width="4.4" height="5" rx="1" transform="rotate(${k*60})" fill="#d9d9d9"/>`;
+  return `<g transform="translate(${cx} ${cy})"><g ${id ? `id="${id}"` : ""}><circle r="13" fill="#f0f0f0"/><circle r="8.5" fill="#1a1a1a"/>${teeth}</g></g>`; }
+function cassetteSVG(o){
+  const {title="", author="", color="#f2e8cf", p=0, cover=null, big=false, side="A"} = o;
+  const ink = darkLabel(color) ? "#f3f3f3" : "#1d1d1d"; const [rl, rr] = packR(p);
+  const t = esc(title.length > (big ? 30 : 22) ? title.slice(0, big ? 29 : 21) + "…" : title);
+  const a = esc(author.length > 30 ? author.slice(0,29)+"…" : author);
+  const uid = Math.random().toString(36).slice(2,8);
+  return `
+  <defs>
+    <linearGradient id="sh${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3e4a"/><stop offset="1" stop-color="#1c1f27"/></linearGradient>
+    <clipPath id="cw${uid}"><rect x="96" y="104" width="208" height="70" rx="10"/></clipPath>
+    ${cover ? `<clipPath id="cc${uid}"><rect x="30" y="24" width="58" height="58" rx="5"/></clipPath>` : ""}
+  </defs>
+  <rect x="2" y="2" width="396" height="248" rx="16" fill="url(#sh${uid})"/>
+  <rect x="2" y="2" width="396" height="248" rx="16" fill="none" stroke="#ffffff22"/>
+  ${[18,382].map(x=>[18,234].map(y=>`<circle cx="${x}" cy="${y}" r="5" fill="#111"/><path d="M${x-3} ${y}h6M${x} ${y-3}v6" stroke="#555" stroke-width="1.2"/>`).join("")).join("")}
+  <rect x="22" y="16" width="356" height="174" rx="8" fill="${color}"/>
+  <rect x="22" y="16" width="356" height="12" rx="6" fill="#0000001a"/>
+  ${[0,1,2].map(i=>`<rect x="22" y="${92+i*5}" width="356" height="2.5" fill="${["#e94f37","#f6ae2d","#33a1fd"][i]}" opacity=".85"/>`).join("")}
+  <text x="34" y="${cover ? 48 : 58}" font-family="Archivo,sans-serif" font-weight="800" font-size="20" fill="${ink}">${side}</text>
+  ${cover ? `<image href="${esc(cover)}" x="30" y="24" width="58" height="58" preserveAspectRatio="xMidYMid slice" clip-path="url(#cc${uid})"/><text x="34" y="44" font-family="Archivo" font-weight="800" font-size="16" fill="#fff" stroke="#000" stroke-width=".6" paint-order="stroke">${side}</text>` : ""}
+  <text x="${cover ? 98 : 62}" y="${big ? 52 : 54}" font-family="Permanent Marker,cursive" font-size="${big ? 22 : 26}" fill="${ink}">${t}</text>
+  <text x="${cover ? 98 : 62}" y="78" font-family="Permanent Marker,cursive" font-size="15" fill="${ink}" opacity=".75">${a}</text>
+  <rect x="88" y="98" width="224" height="82" rx="14" fill="#11131a"/>
+  <g clip-path="url(#cw${uid})">
+    <rect x="96" y="104" width="208" height="70" fill="#20232c"/>
+    <circle ${big?'id="packL"':""} cx="150" cy="139" r="${rl}" fill="#3b2516"/>
+    <circle ${big?'id="packR"':""} cx="250" cy="139" r="${rr}" fill="#3b2516"/>
+    ${hub(150,139, big ? "hubL" : "")}${hub(250,139, big ? "hubR" : "")}
+    <rect x="96" y="104" width="208" height="70" fill="#9fb8ff10"/>
+  </g>
+  <rect x="96" y="104" width="208" height="70" rx="10" fill="none" stroke="#ffffff30"/>
+  <path d="M70 250 L88 204 H312 L330 250 Z" fill="#15171e"/>
+  <circle cx="122" cy="230" r="6" fill="#000"/><circle cx="278" cy="230" r="6" fill="#000"/>
+  <rect x="180" y="218" width="40" height="20" rx="3" fill="#000"/>
+  ${big ? `<path id="tapePath" d="M${150-rl+2} 170 L120 236 H280 L${250+rr-2} 170" fill="none" stroke="#3b2516" stroke-width="2.4" opacity=".9"/>` : ""}
+  `;
+}
+
+/* ================================================================
+   Bibliothèque
+   ================================================================ */
+const UI = {status: "all", shelf: null};
+function coverOf(b){ return BE.coverSrc(b); }
+function render(){
+  const q = $("#q").value.trim().toLowerCase();
+  const sort = S().sort || "last", group = S().group || "none";
+  $("#sort").value = sort; $("#group").value = group;
+  // filtres statut
+  const counts = {all: BOOKS.length, "en-cours":0, "a-lire":0, termine:0, abandon:0, fav:0};
+  for (const b of BOOKS) { counts[bStatus(b)]++; if (bs(b.id).fav) counts.fav++; }
+  const chips = [["all","Tout"],["en-cours","▶ En cours"],["a-lire","À écouter"],["termine","✓ Terminés"],["fav","★ Favoris"],["abandon","Abandonnés"]];
+  $("#statusChips").innerHTML = chips.filter(([k]) => k === "all" || counts[k]).map(([k,l]) =>
+    `<button class="chip ${UI.status===k?"on":""}" data-st="${k}">${l}<span class="n">${counts[k]}</span></button>`).join("");
+  const shelves = [...new Set(BOOKS.flatMap(bShelves))].sort(natcmp);
+  $("#shelfChips").innerHTML = shelves.length ? `<button class="chip ${!UI.shelf?"on":""}" data-sh="">Toutes étagères</button>` +
+    shelves.map(s => `<button class="chip ${UI.shelf===s?"on":""}" data-sh="${esc(s)}">📚 ${esc(s)}</button>`).join("") : "";
+  $("#shelfChips").classList.toggle("hide", !shelves.length);
+
+  let list = BOOKS.filter(b => {
+    if (UI.status === "fav" ? !bs(b.id).fav : (UI.status !== "all" && bStatus(b) !== UI.status)) return false;
+    if (UI.shelf && !bShelves(b).includes(UI.shelf)) return false;
+    if (q && !norm(`${bTitle(b)} ${bAuthor(b)} ${bNarr(b)} ${bShelves(b).join(" ")} ${b.genre||""} ${bGenres(b).join(" ")} ${bSeries(b)?.label||""} ${bYear(b)||""} ${Object.values(bInfo(b)?.wd?.labels||{}).join(" ")} ${bInfo(b)?.ai?.titre_original||""}`).includes(norm(q))) return false;
+    return true; });
+  const cmp = {
+    last: (a,b) => (bs(b.id).last||0) - (bs(a.id).last||0) || natcmp(bTitle(a),bTitle(b)),
+    title: (a,b) => natcmp(bTitle(a),bTitle(b)),
+    author: (a,b) => natcmp(bAuthor(a),bAuthor(b)) || natcmp(bTitle(a),bTitle(b)),
+    added: (a,b) => (b.mtime||0) - (a.mtime||0),
+    progress: (a,b) => bProg(b) - bProg(a),
+    duration: (a,b) => bDur(b) - bDur(a),
+    year: (a,b) => (bYear(a)||9999) - (bYear(b)||9999) || natcmp(bTitle(a),bTitle(b)) }[sort];
+  list.sort(cmp);
+
+  // reprise rapide
+  const last = BOOKS.filter(b => bs(b.id).last && bStatus(b) === "en-cours").sort((a,b) => bs(b.id).last - bs(a.id).last)[0];
+  $("#resume").innerHTML = last ? `<div class="resume"><div class="cv" style="${coverOf(last) ? `background-image:url('${coverOf(last)}')` : `background:${bColor(last)}`}"></div>
+     <div class="t"><span>Reprendre</span><b>${esc(bTitle(last))}</b><span>${esc(bAuthor(last))} · reste ${fmtLong(bDur(last) - bPosSec(last))}</span>
+     <div class="pbar"><i style="width:${bProg(last)*100}%"></i></div></div>
+     <button class="bigplay" data-resume="${last.id}">▶</button></div>` : "";
+
+  if (!BOOKS.length) { $("#shelf").innerHTML = emptyHTML(); return; }
+  if (!list.length) { $("#shelf").innerHTML = `<div class="empty">Rien ne correspond.</div>`; return; }
+  const groups = new Map();
+  const key = b => group === "author" ? bAuthor(b) : group === "status" ? STATUS[bStatus(b)] : group === "series" ? (bSeries(b)?.label || "~Hors série")
+    : group === "decade" ? (bYear(b) ? (Math.floor(bYear(b)/10)*10) + "s" : "~Date inconnue") : "";
+  const multi = {shelf: b => bShelves(b).length ? bShelves(b) : ["~Sans étagère"], genre: b => bGenres(b).length ? bGenres(b).slice(0, 3) : ["~Genre inconnu "]}[group];
+  if (multi) { for (const b of list) for (const s of multi(b)) (groups.get(s) || groups.set(s, []).get(s)).push(b); }
+  else for (const b of list) { const k = key(b); (groups.get(k) || groups.set(k, []).get(k)).push(b); }
+  let keys = [...groups.keys()];
+  if (["author","shelf","genre","series"].includes(group)) keys.sort(natcmp);
+  if (group === "decade") keys.sort();
+  if (group === "series") for (const k of keys) groups.get(k).sort((a,b) => (parseFloat(bSeries(a)?.ord)||999) - (parseFloat(bSeries(b)?.ord)||999) || (bYear(a)||0) - (bYear(b)||0));
+  if (group === "decade") for (const k of keys) groups.get(k).sort((a,b) => bYear(a) - bYear(b));
+  if (group === "status") keys.sort((a,b) => Object.values(STATUS).indexOf(a) - Object.values(STATUS).indexOf(b));
+  $("#shelf").innerHTML = keys.map(k => (k ? `<div class="grp">${esc(k.replace(/^~/, ""))} <span style="color:var(--muted)">${groups.get(k).length}</span></div>` : "") +
+    `<div class="grid">${groups.get(k).map(tileHTML).join("")}</div>`).join("");
+}
+function tileHTML(b){
+  const st = bStatus(b), p = bProg(b);
+  return `<button class="tape" data-open="${b.id}" title="${esc(bTitle(b))} — ${esc(bAuthor(b))}">
+    <svg viewBox="0 0 400 252">${cassetteSVG({title:bTitle(b), author:bAuthor(b), color:bColor(b), p, cover:coverOf(b), side: bs(b.id).fav ? "★" : "A"})}</svg>
+    <div class="meta"><b>${bSeries(b)?.ord ? "T" + esc(bSeries(b).ord) + " · " : ""}${fmtLong(bDur(b))}${p>0 && p<1 ? ` · ${Math.round(p*100)}%` : ""}</b><span class="st" style="color:${STATUS_COL[st]}">${STATUS[st]}</span></div>
+    <span class="dbtn ${bInfo(b)?.at ? "has" : ""}" data-dos="${b.id}" title="Dossier">ⓘ</span></button>`;
+}
+function emptyHTML(){
+  return `<div class="empty">Étagère vide.<br>Ajoute un livre audio : ses fichiers (mp3, m4b…) ou un dossier entier.<br><br>
+    <button class="ib acc" data-act="addfiles">＋ Fichiers d'un livre</button><button class="ib" data-act="adddir">＋ Dossier(s)</button></div>`;
+}
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-dos],[data-open],[data-st],[data-sh],[data-resume],[data-act]"); if (!t) return;
+  if (t.dataset.dos) { e.stopPropagation(); openDossier(BOOKS.find(x => x.id === t.dataset.dos)); }
+  else if (t.dataset.open) { const b = BOOKS.find(x => x.id === t.dataset.open); if (player.book?.id === b.id) showDeck(); else openBook(b, false); }
+  else if (t.dataset.st) { UI.status = t.dataset.st; render(); }
+  else if (t.dataset.sh !== undefined) { UI.shelf = t.dataset.sh || null; render(); }
+  else if (t.dataset.resume) { const b = BOOKS.find(x => x.id === t.dataset.resume); if (player.book?.id === b.id) { showDeck(); play(); } else openBook(b, true); }
+  else if (t.dataset.act === "settings") openSettings();
+  else if (t.dataset.act === "addfiles") $("#fFiles").click();
+  else if (t.dataset.act === "adddir") $("#fDir").click();
+});
+$("#q").oninput = render;
+$("#sort").onchange = e => { setSetting({sort: e.target.value}); render(); };
+$("#group").onchange = e => { setSetting({group: e.target.value}); render(); };
+$("#goLib").onclick = showLib;
+$("#deckBack").onclick = showLib;
+$("#btnSettings").onclick = openSettings;
+$("#btnImport").onclick = () => openSheet(`<h3>Ajouter un livre <button class="x" data-close>×</button></h3>
+  <div class="btns" style="flex-direction:column">
+   <button class="ib acc" data-act="addfiles">＋ Fichiers d'un livre (mp3, m4b, image de couverture…)</button>
+   <button class="ib" data-act="adddir">＋ Tout un dossier (ex : Audiobook) — un sous-dossier = un livre</button></div>
+  <p class="note">Choisis ton dossier <b>Audiobook</b> en entier : « Auteur - Titre », « Auteur/Titre », [mp3-192], (Série 5), CD1/CD2 sont compris ; le dossier de stats de Smart AudioBook est ignoré ; les livres déjà importés sont sautés.<br>Les fichiers sont copiés dans l'appli (ils restent dispo hors ligne). Tu peux ensuite supprimer les originaux pour gagner de la place.
+  Plusieurs .m4b sélectionnés d'un coup = un livre chacun. Plusieurs mp3 = un seul livre, rangés dans l'ordre des noms.</p>`);
+
+
+/* ================================================================
+   Lecteur
+   ================================================================ */
+const player = { audio: new Audio(), book: null, file: 0, cue: 0, lastPause: 0, sleep: null, angL: 0, angR: 0, loading: false, wantPlay: false };
+const A = player.audio; A.preload = "auto";
+if ("preservesPitch" in A) A.preservesPitch = true;
+
+const fileOffset = (b, i) => { let s = 0; for (let k=0;k<i;k++) s += b.durations[k]||0; return s; };
+const gpos = () => player.book ? fileOffset(player.book, player.file) + (A.currentTime || 0) : 0;
+function curChapter(){ const b = player.book; if (!b) return -1; const t = A.currentTime; let idx = 0;
+  b.chapters.forEach((c, k) => { if (c.file < player.file || (c.file === player.file && c.start <= t + 0.25)) idx = k; }); return idx; }
+const chapStartG = c => fileOffset(player.book, c.file) + c.start;
+const chapEndG = (c, k) => { const n = player.book.chapters[k+1]; return n && n.file === c.file ? fileOffset(player.book, c.file) + n.start : fileOffset(player.book, c.file) + (player.book.durations[c.file] || c.end || 0); };
+
+async function openBook(b, autoplay){
+  if (player.book) savePos();
+  player.book = b; showDeck(); drawDeckStatic();
+  const p = bs(b.id).pos || {file:0, t:0};
+  await loadFile(Math.min(p.file, b.files.length-1), p.t || 0, autoplay);
+  mediaMeta(); renderMini();
+}
+async function loadFile(i, t, autoplay){
+  const b = player.book; player.loading = true; player.file = i;
+  try { A.src = await BE.audioSrc(b, i); } catch(e) { toast("Fichier introuvable : " + b.files[i]); player.loading = false; return; }
+  A.playbackRate = S().speed || 1; A.defaultPlaybackRate = A.playbackRate;
+  await new Promise(res => { const ok = () => { A.removeEventListener("loadedmetadata", ok); res(); }; A.addEventListener("loadedmetadata", ok); A.addEventListener("error", ok, {once:true}); });
+  if (isFinite(A.duration) && A.duration > 0 && Math.abs((b.durations[i]||0) - A.duration) > 1.5 && !(b.durations[i] > 0)) {
+    b.durations[i] = A.duration; b.duration = bDur(b); BE.reportDuration(b, i, A.duration); }
+  try { A.currentTime = Math.max(0, Math.min(t, (A.duration || t+1) - 0.5)); } catch {}
+  player.loading = false; drawTicks(); updateUI();
+  if (autoplay || player.wantPlay) play(true);
+}
+async function play(noRewind){
+  if (!player.book) return; ac(); player.wantPlay = true;
+  if (!noRewind && player.lastPause) { const gap = (Date.now() - player.lastPause)/1000; const rw = S().rewind ?? 5;
+    if (gap > 8 && rw) seekG(gpos() - (gap > 1800 ? rw*3 : rw), true); }
+  try { await A.play(); } catch(e) { if (e.name !== "AbortError") toast("Lecture impossible : " + e.message); }
+  if (bStatus(player.book) === "a-lire" || bStatus(player.book) === "termine") setBook(player.book.id, {status:"en-cours"});
+}
+function pause(){ player.wantPlay = false; A.pause(); player.lastPause = Date.now(); savePos(); }
+function toggle(){ A.paused ? play() : pause(); }
+async function seekG(sec, keepState){
+  const b = player.book; if (!b) return; const total = bDur(b); sec = Math.max(0, total ? Math.min(sec, total - 0.5) : sec);
+  let i = 0, acc = 0; while (i < b.files.length-1 && acc + (b.durations[i]||0) <= sec) { acc += b.durations[i]||0; i++; }
+  const t = sec - acc;
+  if (i === player.file) { A.currentTime = Math.max(0, t); updateUI(); }
+  else { const was = !A.paused; await loadFile(i, t, was); }
+  if (!keepState) savePos();
+}
+const skip = d => seekG(gpos() + d);
+function chapterJump(dir){
+  const b = player.book; if (!b) return; const k = curChapter(); const c = b.chapters[k];
+  if (dir < 0) { if (gpos() - chapStartG(c) > 4 || k === 0) seekG(chapStartG(c)); else seekG(chapStartG(b.chapters[k-1])); }
+  else if (b.chapters[k+1]) seekG(chapStartG(b.chapters[k+1]));
+}
+A.addEventListener("ended", async () => {
+  const b = player.book;
+  if (player.file < b.files.length - 1) { await loadFile(player.file + 1, 0, true); }
+  else { player.wantPlay = false; setBook(b.id, {status:"termine", pos:{file:0, t:0}, done: Date.now()}); clunk(true); toast("🎉 Livre terminé — rangé dans « Terminés »"); updateUI(); }
+});
+A.addEventListener("play", () => { updateUI(); hiss(true); });
+A.addEventListener("pause", () => { updateUI(); hiss(false); });
+A.addEventListener("ratechange", updateUI);
+let lastSave = 0;
+A.addEventListener("timeupdate", () => { if (Date.now() - lastSave > 5000 && !A.paused) savePos(); checkSleep(); });
+function savePos(){ if (!player.book || player.loading) return; lastSave = Date.now();
+  setBook(player.book.id, {pos: {file: player.file, t: Math.round(A.currentTime*10)/10}, last: Date.now()}); }
+document.addEventListener("visibilitychange", () => { if (document.hidden) savePos(); });
+window.addEventListener("pagehide", savePos);
+
+/* --- maintien FF / REW = défilement rapide --- */
+let holdT = null, cueT = null;
+function keyDown(k, el){
+  el.classList.add("down"); clunk(k === "play" || k === "stop");
+  if (k === "ff" || k === "rew") { holdT = setTimeout(() => { player.cue = k === "ff" ? 1 : -1; el.dataset.held = 1;
+      cueT = setInterval(() => skip(player.cue * 4), 120); }, 380); }
+}
+function keyUp(k, el){
+  el.classList.remove("down"); clearTimeout(holdT);
+  if (cueT) { clearInterval(cueT); cueT = null; player.cue = 0; delete el.dataset.held; savePos(); return; }
+  if (k === "play") toggle();
+  else if (k === "stop") { pause(); }
+  else if (k === "ff") skip(S().fwd || 30);
+  else if (k === "rew") skip(-(S().back || 15));
+  else if (k === "prevch") chapterJump(-1);
+  else if (k === "nextch") chapterJump(1);
+}
+document.querySelectorAll(".key").forEach(el => {
+  const k = el.dataset.k;
+  el.addEventListener("pointerdown", e => { e.preventDefault(); el.setPointerCapture(e.pointerId); keyDown(k, el); });
+  el.addEventListener("pointerup", () => keyUp(k, el));
+  el.addEventListener("pointercancel", () => { el.classList.remove("down"); clearTimeout(holdT); if (cueT) { clearInterval(cueT); cueT = null; player.cue = 0; } });
+});
+$("#miniPlay").onclick = e => { e.stopPropagation(); clunk(); toggle(); };
+$("#mini").onclick = showDeck;
+
+/* vitesse / volume */
+$("#spd").oninput = e => { const v = +e.target.value; A.playbackRate = v; A.defaultPlaybackRate = v; setSetting({speed: v}); updateUI(); };
+$("#spd").ondblclick = () => { $("#spd").value = 1; $("#spd").oninput({target:$("#spd")}); };
+$("#vol").oninput = e => { A.volume = +e.target.value; setSetting({vol: A.volume}); $("#volV").textContent = Math.round(A.volume*10); hiss(!A.paused); };
+
+/* barre de position (sur tout le livre, repères de chapitres) */
+function seekFromEvent(e){ const r = $("#seek").getBoundingClientRect(); const x = Math.min(1, Math.max(0, (e.clientX - r.left)/r.width)); return x * bDur(player.book); }
+$("#seek").addEventListener("pointerdown", e => { if (!player.book) return; $("#seek").setPointerCapture(e.pointerId); player.drag = seekFromEvent(e); updateUI(); });
+$("#seek").addEventListener("pointermove", e => { if (player.drag != null) { player.drag = seekFromEvent(e); updateUI(); } });
+$("#seek").addEventListener("pointerup", () => { if (player.drag != null) { const s = player.drag; player.drag = null; clunk(); seekG(s); } });
+function drawTicks(){ const b = player.book; const d = bDur(b); if (!d) { $("#ticks").innerHTML = ""; return; }
+  $("#ticks").innerHTML = b.chapters.length > 1 && b.chapters.length < 300 ? b.chapters.slice(1).map(c => `<div class="tk" style="left:${chapStartG(c)/d*100}%"></div>`).join("") : ""; }
+
+/* ---------- affichage ---------- */
+function drawDeckStatic(){
+  const b = player.book;
+  $("#dTitle").textContent = bTitle(b); $("#dAuthor").textContent = bAuthor(b) + (bNarr(b) ? " · lu par " + bNarr(b) : "");
+  $("#cass").innerHTML = cassetteSVG({title: bTitle(b), author: bAuthor(b), color: bColor(b), p: bProg(b), cover: coverOf(b), big: true, side: bs(b.id).fav ? "★" : "A"});
+  $("#spd").value = S().speed || 1; $("#vol").value = S().vol ?? 1; A.volume = S().vol ?? 1; $("#volV").textContent = Math.round(A.volume*10);
+  $("#lblRew").textContent = "-" + (S().back || 15); $("#lblFf").textContent = "+" + (S().fwd || 30);
+}
+function updateUI(){
+  const b = player.book; if (!b) return;
+  const total = bDur(b), pos = player.drag ?? gpos(), p = total ? pos/total : 0;
+  const k = curChapter(), c = b.chapters[k];
+  $("#lChap").textContent = c ? `${k+1}/${b.chapters.length} ${c.title}` : "—";
+  if (c) { const cs = chapStartG(c), ce = chapEndG(c, k); $("#lChapT").textContent = `${fmt(pos - cs)} / ${fmt(ce - cs)}`; }
+  $("#lPos").textContent = fmt(pos, true); $("#lPct").textContent = Math.floor(p*100) + "%";
+  const rate = A.playbackRate || 1;
+  $("#lLeft").textContent = "-" + fmt((total - pos) / rate, true);
+  $("#lSpeed").textContent = "×" + rate.toFixed(2); $("#spdV").textContent = rate.toFixed(2);
+  $("#lState").textContent = player.cue > 0 ? "▶▶ FF" : player.cue < 0 ? "◀◀ REW" : A.paused ? "PAUSE" : "▶ PLAY";
+  $("#seekFl").style.width = (p*100) + "%"; $("#seekKn").style.left = (p*100) + "%";
+  const ct = Math.floor(pos / 10) % 1000; [...$("#counter").children].forEach((s, i) => s.textContent = String(ct).padStart(3,"0")[i]);
+  document.querySelector('.key.play').innerHTML = (A.paused ? "▶" : "❚❚") + `<small>${A.paused ? "PLAY" : "PAUSE"}</small>`;
+  const [rl, rr] = packR(p); const pl = $("#packL"), pr = $("#packR");
+  if (pl) { pl.setAttribute("r", rl); pr.setAttribute("r", rr); $("#tapePath")?.setAttribute("d", `M${150-rl+2} 170 L120 236 H280 L${250+rr-2} 170`); }
+  renderMini();
+  if ("mediaSession" in navigator && isFinite(A.duration) && A.duration > 0) {
+    try { navigator.mediaSession.setPositionState({duration: A.duration, playbackRate: rate, position: Math.min(A.currentTime, A.duration)}); } catch {} }
+}
+// bobines : vitesse angulaire = vitesse de bande / rayon (la petite bobine tourne plus vite, comme en vrai)
+let lastF = performance.now();
+function spin(now){
+  const dt = Math.min(.1, (now - lastF)/1000); lastF = now;
+  if (player.book && !$("#deck").classList.contains("hide")) {
+    const moving = player.cue ? player.cue * 9 : (!A.paused ? (A.playbackRate || 1) : 0);
+    if (moving) { const v = 46 * moving; const p = bDur(player.book) ? gpos()/bDur(player.book) : 0; const [rl, rr] = packR(p);
+      player.angL += v / rl * dt * 57.3; player.angR += v / rr * dt * 57.3;
+      $("#hubL")?.setAttribute("transform", `rotate(${player.angL % 360})`); $("#hubR")?.setAttribute("transform", `rotate(${player.angR % 360})`);
+      if ((now|0) % 4 === 0) updateUI(); }
+  }
+  requestAnimationFrame(spin);
+}
+requestAnimationFrame(spin);
+setInterval(() => { if (player.book && !A.paused) updateUI(); }, 500);
+
+function renderMini(){
+  const b = player.book; const m = $("#mini");
+  if (!b || !$("#deck").classList.contains("hide")) { m.classList.add("hide"); return; }
+  m.classList.remove("hide"); const cv = coverOf(b);
+  $("#miniCv").style.cssText = cv ? `background-image:url('${cv}')` : `background:${bColor(b)}`;
+  $("#miniT").textContent = bTitle(b); $("#miniS").textContent = `${fmt(gpos(), true)} · reste ${fmtLong((bDur(b) - gpos())/(A.playbackRate||1))}`;
+  $("#miniPlay").textContent = A.paused ? "▶" : "❚❚";
+}
+function showDeck(){ if (!player.book) return; $("#lib").classList.add("hide"); $("#deck").classList.remove("hide"); renderMini(); drawDeckStatic(); updateUI(); window.scrollTo(0,0); }
+function showLib(){ $("#deck").classList.add("hide"); $("#lib").classList.remove("hide"); render(); renderMini(); }
+
+/* ---------- Media Session (écran verrouillé, casque, touches média) ---------- */
+function mediaMeta(){
+  if (!("mediaSession" in navigator) || !player.book) return; const b = player.book; const cv = coverOf(b);
+  navigator.mediaSession.metadata = new MediaMetadata({title: bTitle(b), artist: bAuthor(b), album: "K7",
+    artwork: cv ? [{src: new URL(cv, location.href).href, sizes: "512x512"}] : [{src: "icon-512.png", sizes: "512x512", type: "image/png"}]});
+  const h = { play: () => play(), pause: () => pause(), stop: () => pause(),
+    seekbackward: () => skip(-(S().back||15)), seekforward: () => skip(S().fwd||30),
+    previoustrack: () => chapterJump(-1), nexttrack: () => chapterJump(1),
+    seekto: d => { A.currentTime = d.seekTime; savePos(); } };
+  for (const [k, f] of Object.entries(h)) { try { navigator.mediaSession.setActionHandler(k, f); } catch {} }
+}
+document.addEventListener("keydown", e => {
+  if (e.target.matches("input,select,textarea") || !player.book) return;
+  if (e.code === "Space") { e.preventDefault(); clunk(); toggle(); }
+  else if (e.key === "ArrowLeft") skip(e.shiftKey ? -60 : -(S().back||15));
+  else if (e.key === "ArrowRight") skip(e.shiftKey ? 60 : (S().fwd||30));
+  else if (e.key === "PageUp") chapterJump(-1);
+  else if (e.key === "PageDown") chapterJump(1);
+  else if (e.key === "b") addMark();
+  else if (e.key === "Escape") { if (!$("#veil").classList.contains("hide")) closeSheet(); else showLib(); }
+});
+
+/* ---------- minuterie de sommeil ---------- */
+function checkSleep(){
+  const s = player.sleep; if (!s || A.paused) return;
+  let left = s.mode === "min" ? (s.end - Date.now())/1000 : (chapEndG(player.book.chapters[s.chap], s.chap) - gpos()) / (A.playbackRate||1);
+  if (s.mode === "chap" && curChapter() !== s.chap) left = 0;
+  $("#lSleep").textContent = "☾ " + fmt(Math.max(0,left));
+  const vol = S().vol ?? 1;
+  if (left < 8 && left > 0) A.volume = vol * left/8;
+  if (left <= 0) { pause(); A.volume = vol; player.sleep = null; $("#lSleep").textContent = ""; $("#mSleep").classList.remove("on"); clunk(true); }
+}
+setInterval(checkSleep, 1000);
+$("#mSleep").onclick = () => {
+  const opts = [[0,"Arrêt"],[5,"5 min"],[10,"10 min"],[15,"15 min"],[20,"20 min"],[30,"30 min"],[45,"45 min"],[60,"1 h"],[90,"1 h 30"],["chap","Fin du chapitre"]];
+  openSheet(`<h3>☾ Minuterie de sommeil <button class="x" data-close>×</button></h3><div class="seg">${opts.map(([v,l]) => `<button data-sl="${v}">${l}</button>`).join("")}</div>
+   <p class="note">Le son baisse doucement sur les dernières secondes, puis la lecture s'arrête. Le recul auto à la reprise te remet là où tu as décroché.</p>`);
+  document.querySelectorAll("[data-sl]").forEach(x => x.onclick = () => { const v = x.dataset.sl;
+    if (v === "0") { player.sleep = null; $("#lSleep").textContent = ""; A.volume = S().vol ?? 1; }
+    else if (v === "chap") player.sleep = {mode:"chap", chap: curChapter()};
+    else player.sleep = {mode:"min", end: Date.now() + v*60000};
+    $("#mSleep").classList.toggle("on", !!player.sleep); closeSheet(); if (player.sleep && A.paused) play(); });
+};
+
+/* ---------- chapitres ---------- */
+$("#mChap").onclick = () => {
+  const b = player.book; const cur = curChapter();
+  openSheet(`<h3>☰ Chapitres <span class="note">${b.chapters.length}</span><button class="x" data-close>×</button></h3><div class="list">${b.chapters.map((c,k) =>
+    `<button class="li ${k===cur?"cur":""}" data-ch="${k}"><span class="n">${String(k+1).padStart(2,"0")}</span><span class="tt"><b>${esc(c.title)}</b><span>${fmt(chapStartG(c), true)}</span></span><span class="d">${fmt(chapEndG(c,k)-chapStartG(c))}</span></button>`).join("")}</div>`);
+  document.querySelectorAll("[data-ch]").forEach(x => x.onclick = () => { clunk(); seekG(chapStartG(b.chapters[+x.dataset.ch])); closeSheet(); });
+  document.querySelector(".li.cur")?.scrollIntoView({block:"center"});
+};
+
+/* ---------- signets ---------- */
+function addMark(){
+  const b = player.book; if (!b) return; clunk();
+  const m = {file: player.file, t: Math.round(A.currentTime*10)/10, g: gpos(), at: Date.now(), note: "", chap: b.chapters[curChapter()]?.title || ""};
+  const marks = [...(bs(b.id).marks || []), m]; setBook(b.id, {marks});
+  openSheet(`<h3>🔖 Signet à ${fmt(m.g, true)} <button class="x" data-close>×</button></h3>
+    <label class="fld"><span>Note (facultatif) — une phrase, une idée, une image pour t'en souvenir</span><input id="mkNote" placeholder="ex : la scène du phare, à réécouter"></label>
+    <div class="btns"><button class="ib acc" id="mkOk">Enregistrer</button></div>`);
+  $("#mkNote").focus();
+  const save = () => { m.note = $("#mkNote").value.trim(); setBook(b.id, {marks}); closeSheet(); toast("Signet posé"); };
+  $("#mkOk").onclick = save; $("#mkNote").onkeydown = e => e.key === "Enter" && save();
+}
+$("#mMark").onclick = addMark;
+$("#mMarks").onclick = () => {
+  const b = player.book; const marks = (bs(b.id).marks || []).slice().sort((a,b2) => a.g - b2.g);
+  openSheet(`<h3>📑 Signets <button class="x" data-close>×</button></h3>${marks.length ? `<div class="list">${marks.map((m,k) =>
+    `<div class="li"><button class="li" style="padding:0" data-mk="${k}"><span class="tt"><b>${fmt(m.g,true)} · ${esc(m.note || m.chap || "Signet")}</b><span>${esc(m.chap)} · posé le ${new Date(m.at).toLocaleDateString("fr-FR")}</span></span></button><button class="ib danger" data-mkdel="${k}">✕</button></div>`).join("")}</div>`
+    : `<p class="note">Aucun signet. Appuie sur « SIGNET + » (ou touche B) pendant l'écoute.</p>`}`);
+  document.querySelectorAll("[data-mk]").forEach(x => x.onclick = () => { const m = marks[+x.dataset.mk]; clunk(); seekG(m.g); closeSheet(); });
+  document.querySelectorAll("[data-mkdel]").forEach(x => x.onclick = () => { const m = marks[+x.dataset.mkdel];
+    setBook(b.id, {marks: (bs(b.id).marks||[]).filter(z => z !== m && !(z.at === m.at && z.g === m.g))}); $("#mMarks").onclick(); });
+};
+$("#mInfo").onclick = () => openBookSheet(player.book);
+$("#mDos").onclick = () => openDossier(player.book);
+
+/* ================================================================
+   DOSSIERS — Wikidata + Wikipédia + Open Library + IA
+   Tout est stocké dans le téléphone (IndexedDB « info ») → lisible hors ligne
+   ================================================================ */
+const Info = {
+  map: {},
+  async loadAll(){ try { const keys = await IDB.req("info","readonly",o=>o.getAllKeys()); const vals = await IDB.all("info"); (keys||[]).forEach((k,i) => this.map[k] = vals[i]); } catch(e) { console.warn(e); } },
+  get(k){ return this.map[k]; },
+  async put(k, v){ this.map[k] = v; await IDB.put("info", k, v); },
+  async del(k){ delete this.map[k]; await IDB.del("info", k); },
+};
+const norm = s => String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+const aKey = name => "a:" + norm(name);
+const bInfo = b => Info.get("b:" + b.id);
+const bYear = b => { const i = bInfo(b); return +(i?.wd?.year || i?.ai?.annee || i?.ol?.year || b.year || 0) || 0; };
+const bGenres = b => { const i = bInfo(b); return [...new Set([...(i?.wd?.genres||[]), ...(i?.ai?.genres||[])].map(g => g.toLowerCase()))]; };
+const bSeries = b => { const s = bInfo(b)?.wd?.series; if (s) return s; if (b.series) return b.series; const a = bInfo(b)?.ai?.serie; return a?.nom ? {label: a.nom, ord: a.position} : null; };
+const LANG_NAMES = (() => { try { return new Intl.DisplayNames(["fr"], {type: "language"}); } catch { return null; } })();
+const langName = c => { try { return LANG_NAMES?.of(c) || c; } catch { return c; } };
+
+async function getJSON(url, opt = {}, ms = 25000){
+  const c = new AbortController(); const t = setTimeout(() => c.abort(), ms);
+  try { const r = await fetch(url, {...opt, signal: c.signal}); if (!r.ok) { const e = new Error(`HTTP ${r.status}`); e.status = r.status; throw e; } return await r.json(); }
+  catch(e) { if (e.name === "AbortError") throw new Error("délai dépassé"); throw e; }
+  finally { clearTimeout(t); }
+}
+async function sparql(q){
+  const j = await getJSON("https://query.wikidata.org/sparql?format=json&query=" + encodeURIComponent(q));
+  return j.results.bindings.map(r => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v.value])));
+}
+const QID = u => (u && /\/entity\/(Q\d+)$/.exec(u)) ? /\/entity\/(Q\d+)$/.exec(u)[1] : null;
+const yearOf = d => { const m = /^(-?\d{1,4})/.exec(d || ""); return m ? +m[1] : null; };
+const sq = s => String(s).replace(/["\\\n]/g, " ");
+const isLabelQ = (l, v) => !l || /^Q\d+$/.test(l) || l === v;
+
+function cleanTitle(t){
+  return String(t||"")
+    .replace(/\[[^\]]*\]|\([^)]*(livre audio|audio|unabridged|int[ée]gral|lu par|narr|mp3|m4b)[^)]*\)/gi, "")
+    .replace(/\b(livre audio|audiobook|unabridged|version int[ée]grale|int[ée]gral)\b/gi, "")
+    .replace(/\b(tome|vol(ume)?\.?|t\.?|book|partie)\s*\d+\b/gi, "")
+    .replace(/^\s*\d+\s*[-–._]\s*/, "").replace(/\s{2,}/g, " ").replace(/[\s:–—-]+$/, "").trim();
+}
+function authorMatches(cand, wanted){
+  const w = norm(wanted).split(" ").filter(x => x.length > 2); if (!w.length) return true;
+  const c = norm(cand).split(" "); const last = w[w.length - 1];
+  return c.includes(last) || w.some(x => x.length > 3 && c.includes(x));
+}
+
+/* ---------- 1. trouver l'œuvre sur Wikidata ---------- */
+async function findWork(title, author){
+  const unknown = !author || /inconnu/i.test(author);
+  for (const lang of ["fr", "en"]) {
+    for (const q of unknown ? [title] : [title, `${title} ${author}`]) {
+      const rows = await sparql(`SELECT ?w ?wLabel ?wDescription ?a ?aLabel ?num WHERE {
+        SERVICE wikibase:mwapi { bd:serviceParam wikibase:api "EntitySearch"; wikibase:endpoint "www.wikidata.org";
+          mwapi:search "${sq(q)}"; mwapi:language "${lang}". ?w wikibase:apiOutputItem mwapi:item. ?num wikibase:apiOrdinal true. }
+        ?w wdt:P50 ?a.
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en". } } ORDER BY ?num LIMIT 40`);
+      const scored = rows.map(r => ({...r, score: (unknown || authorMatches(r.aLabel, author) ? 100 : 0) - (+r.num || 0)
+        + (norm(r.wLabel) === norm(title) ? 20 : 0) - (/(édition|edition|traduction|translation)/i.test(r.wDescription || "") ? 30 : 0)}))
+        .sort((a, b) => b.score - a.score);
+      if (scored[0] && scored[0].score > 50) return {q: QID(scored[0].w), label: scored[0].wLabel, desc: scored[0].wDescription || "", author: scored[0].aLabel, authorQ: QID(scored[0].a)};
+    }
+  }
+  return null;
+}
+
+/* ---------- 2. détails de l'œuvre ---------- */
+async function workDetails(q){
+  const rows = await sparql(`SELECT ?k ?v ?vLabel ?x ?xLabel ?y ?z ?zLabel WHERE {
+    VALUES ?w { wd:${q} }
+    { BIND("genre" AS ?k) ?w wdt:P136 ?v } UNION { BIND("date" AS ?k) ?w wdt:P577 ?y } UNION
+    { BIND("series" AS ?k) ?w p:P179 ?s. ?s ps:P179 ?v. OPTIONAL { ?s pq:P1545 ?y } } UNION
+    { BIND("follows" AS ?k) ?w wdt:P155 ?v } UNION { BIND("followedby" AS ?k) ?w wdt:P156 ?v } UNION
+    { BIND("lang" AS ?k) ?w wdt:P407 ?v } UNION { BIND("country" AS ?k) ?w wdt:P495 ?v } UNION
+    { BIND("subject" AS ?k) ?w wdt:P921 ?v } UNION { BIND("place" AS ?k) ?w wdt:P840 ?v } UNION
+    { BIND("period" AS ?k) ?w wdt:P2408 ?v } UNION { BIND("character" AS ?k) ?w wdt:P674 ?v } UNION
+    { BIND("award" AS ?k) ?w wdt:P166 ?v } UNION { BIND("form" AS ?k) ?w wdt:P7937 ?v } UNION
+    { BIND("author" AS ?k) ?w wdt:P50 ?v } UNION { BIND("movement" AS ?k) ?w wdt:P135 ?v } UNION
+    { BIND("inspired" AS ?k) ?w wdt:P941 ?v } UNION { BIND("basedon" AS ?k) ?w wdt:P144 ?v } UNION
+    { BIND("adapt" AS ?k) ?v wdt:P144 ?w. OPTIONAL { ?v wdt:P31 ?x } OPTIONAL { ?v wdt:P577 ?y } OPTIONAL { ?v wdt:P57|wdt:P50|wdt:P170 ?z } } UNION
+    { BIND("adapt" AS ?k) ?w wdt:P4969 ?v. OPTIONAL { ?v wdt:P31 ?x } OPTIONAL { ?v wdt:P577 ?y } OPTIONAL { ?v wdt:P57|wdt:P50|wdt:P170 ?z } } UNION
+    { BIND("label" AS ?k) ?w rdfs:label ?y. BIND(LANG(?y) AS ?x) } UNION
+    { BIND("alt" AS ?k) ?w skos:altLabel ?y. BIND(LANG(?y) AS ?x) } UNION
+    { BIND("wiki" AS ?k) ?y schema:about ?w; schema:isPartOf ?x. FILTER(?x IN (<https://fr.wikipedia.org/>, <https://en.wikipedia.org/>)) }
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en". } }`);
+  const d = {q, genres:[], subjects:[], places:[], periods:[], characters:[], awards:[], forms:[], authors:[], langs:[], countries:[], movements:[], inspired:[], basedOn:[],
+    labels:{}, alts:{}, adaptations:[], wiki:{}, follows:null, followedBy:null, series:null, year:null};
+  const push = (arr, r) => { if (!isLabelQ(r.vLabel, QID(r.v)) && !arr.includes(r.vLabel)) arr.push(r.vLabel); };
+  const ad = {};
+  for (const r of rows) switch (r.k) {
+    case "genre": push(d.genres, r); break; case "subject": push(d.subjects, r); break; case "place": push(d.places, r); break;
+    case "period": push(d.periods, r); break; case "character": push(d.characters, r); break; case "award": push(d.awards, r); break;
+    case "form": push(d.forms, r); break; case "author": push(d.authors, r); break; case "lang": push(d.langs, r); break;
+    case "country": push(d.countries, r); break; case "movement": push(d.movements, r); break;
+    case "inspired": push(d.inspired, r); break; case "basedon": push(d.basedOn, r); break;
+    case "date": { const y = yearOf(r.y); if (y != null && (d.year == null || y < d.year)) d.year = y; break; }
+    case "series": if (!d.series || r.y) d.series = {q: QID(r.v), label: r.vLabel, ord: r.y || d.series?.ord || null}; break;
+    case "follows": d.follows = {q: QID(r.v), label: r.vLabel}; break;
+    case "followedby": d.followedBy = {q: QID(r.v), label: r.vLabel}; break;
+    case "label": d.labels[r.x] = r.y; break;
+    case "alt": (d.alts[r.x] ||= []).includes(r.y) || d.alts[r.x].push(r.y); break;
+    case "wiki": d.wiki[r.x.includes("fr.") ? "fr" : "en"] = r.y; break;
+    case "adapt": { if (isLabelQ(r.vLabel, QID(r.v))) break; const a = ad[r.v] ||= {title: r.vLabel, types: [], year: null, by: [], q: QID(r.v), src: "Wikidata"};
+      if (r.xLabel && !isLabelQ(r.xLabel, QID(r.x)) && !a.types.includes(r.xLabel)) a.types.push(r.xLabel);
+      const y = yearOf(r.y); if (y != null && (a.year == null || y < a.year)) a.year = y;
+      if (r.zLabel && !isLabelQ(r.zLabel, QID(r.z)) && !a.by.includes(r.zLabel)) a.by.push(r.zLabel); break; }
+  }
+  d.adaptations = Object.values(ad).sort((a, b) => (a.year || 9999) - (b.year || 9999));
+  d.label = d.labels.fr || d.labels.en || Object.values(d.labels)[0] || "";
+  if (d.series?.q) {
+    const m = await sparql(`SELECT ?m ?mLabel ?ord ?date WHERE { ?m p:P179 ?st. ?st ps:P179 wd:${d.series.q}.
+      OPTIONAL { ?st pq:P1545 ?ord } OPTIONAL { ?m wdt:P577 ?date }
+      FILTER NOT EXISTS { ?m wdt:P31 wd:Q3331189 }
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en". } } LIMIT 300`);
+    const mem = {};
+    for (const r of m) { const k = QID(r.m); const o = mem[k] ||= {q: k, label: r.mLabel, ord: r.ord || null, year: null};
+      const y = yearOf(r.date); if (y != null && (o.year == null || y < o.year)) o.year = y; if (r.ord) o.ord = r.ord; }
+    d.series.members = Object.values(mem).filter(x => !isLabelQ(x.label, x.q))
+      .sort((a, b) => (parseFloat(a.ord) || 9999) - (parseFloat(b.ord) || 9999) || (a.year || 9999) - (b.year || 9999));
+  }
+  return d;
+}
+
+/* ---------- 3. auteur ---------- */
+async function authorDetails(q){
+  const rows = await sparql(`SELECT ?k ?v ?vLabel ?y WHERE { VALUES ?a { wd:${q} }
+    { BIND("birth" AS ?k) ?a wdt:P569 ?y } UNION { BIND("death" AS ?k) ?a wdt:P570 ?y } UNION
+    { BIND("bplace" AS ?k) ?a wdt:P19 ?v } UNION { BIND("dplace" AS ?k) ?a wdt:P20 ?v } UNION
+    { BIND("country" AS ?k) ?a wdt:P27 ?v } UNION { BIND("movement" AS ?k) ?a wdt:P135 ?v } UNION
+    { BIND("genre" AS ?k) ?a wdt:P136 ?v } UNION { BIND("job" AS ?k) ?a wdt:P106 ?v } UNION
+    { BIND("infl" AS ?k) ?a wdt:P737 ?v } UNION { BIND("influenced" AS ?k) ?v wdt:P737 ?a } UNION
+    { BIND("pseudo" AS ?k) ?a wdt:P742 ?y } UNION { BIND("notable" AS ?k) ?a wdt:P800 ?v } UNION
+    { BIND("award" AS ?k) ?a wdt:P166 ?v } UNION { BIND("native" AS ?k) ?a wdt:P1559 ?y } UNION
+    { BIND("label" AS ?k) ?a rdfs:label ?y. FILTER(LANG(?y) IN ("fr","en")) } UNION
+    { BIND("desc" AS ?k) ?a schema:description ?y. FILTER(LANG(?y) = "fr") } UNION
+    { BIND("wiki" AS ?k) ?y schema:about ?a; schema:isPartOf <https://fr.wikipedia.org/> } UNION
+    { BIND("wikien" AS ?k) ?y schema:about ?a; schema:isPartOf <https://en.wikipedia.org/> }
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en". } }`);
+  const a = {q, born:null, died:null, bplace:[], dplace:[], countries:[], movements:[], genres:[], jobs:[], infl:[], influenced:[], pseudos:[], notable:[], awards:[], native:"", label:"", desc:"", wiki:{}};
+  const push = (arr, r) => { if (!isLabelQ(r.vLabel, QID(r.v)) && !arr.includes(r.vLabel)) arr.push(r.vLabel); };
+  for (const r of rows) switch (r.k) {
+    case "birth": a.born ??= r.y?.slice(0,10); break; case "death": a.died ??= r.y?.slice(0,10); break;
+    case "bplace": push(a.bplace, r); break; case "dplace": push(a.dplace, r); break; case "country": push(a.countries, r); break;
+    case "movement": push(a.movements, r); break; case "genre": push(a.genres, r); break; case "job": push(a.jobs, r); break;
+    case "infl": push(a.infl, r); break; case "influenced": push(a.influenced, r); break; case "notable": push(a.notable, r); break;
+    case "award": push(a.awards, r); break; case "pseudo": a.pseudos.includes(r.y) || a.pseudos.push(r.y); break;
+    case "native": a.native ||= r.y; break; case "desc": a.desc ||= r.y; break;
+    case "label": if (!a.label || /fr/.test(r.k)) a.label ||= r.y; break;
+    case "wiki": a.wiki.fr = r.y; break; case "wikien": a.wiki.en = r.y; break;
+  }
+  const w = await sparql(`SELECT ?w ?wLabel ?date ?sLabel ?tLabel WHERE { ?w wdt:P50 wd:${q}.
+    FILTER NOT EXISTS { ?w wdt:P31 wd:Q3331189 } FILTER NOT EXISTS { ?w wdt:P31 wd:Q13442814 }
+    OPTIONAL { ?w wdt:P577 ?date } OPTIONAL { ?w wdt:P179 ?s } OPTIONAL { ?w wdt:P31 ?t }
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en". } } LIMIT 600`);
+  const works = {};
+  for (const r of w) { const k = QID(r.w); if (isLabelQ(r.wLabel, k)) continue; const o = works[k] ||= {q: k, label: r.wLabel, year: null, series: r.sLabel || "", type: r.tLabel || ""};
+    const y = yearOf(r.date); if (y != null && (o.year == null || y < o.year)) o.year = y; }
+  a.works = Object.values(works).sort((x, y) => (x.year ?? 9999) - (y.year ?? 9999) || natcmp(x.label, y.label));
+  return a;
+}
+
+/* ---------- 4. Wikipédia ---------- */
+async function wikiIntro(url){
+  if (!url) return null; const u = new URL(url); const title = decodeURIComponent(u.pathname.split("/wiki/")[1] || "");
+  const j = await getJSON(`${u.origin}/w/api.php?action=query&prop=extracts|pageimages&exintro=1&explaintext=1&piprop=original&redirects=1&format=json&origin=*&titles=${encodeURIComponent(title)}`);
+  const pg = Object.values(j.query?.pages || {})[0]; if (!pg || pg.missing !== undefined) return null;
+  return {extract: (pg.extract || "").trim(), url, image: pg.original?.source || null, lang: u.hostname.slice(0, 2)};
+}
+
+/* ---------- 5. Open Library ---------- */
+async function openLib(title, author){
+  const a = /inconnu/i.test(author) ? "" : `&author=${encodeURIComponent(author)}`;
+  const j = await getJSON(`https://openlibrary.org/search.json?title=${encodeURIComponent(title)}${a}&limit=3&fields=key,title,first_publish_year,subject,cover_i,edition_count,number_of_pages_median,language,subject_people,subject_places,subject_times`);
+  const d = j.docs?.[0]; if (!d) return null;
+  return {key: d.key, title: d.title, year: d.first_publish_year || null, subjects: (d.subject||[]).slice(0, 25), people: (d.subject_people||[]).slice(0, 15),
+    places: (d.subject_places||[]).slice(0, 12), times: (d.subject_times||[]).slice(0, 8), cover: d.cover_i || null, editions: d.edition_count || 0,
+    pages: d.number_of_pages_median || null, langs: (d.language||[]).length};
+}
+async function grabCover(b, urls){
+  for (const u of urls.filter(Boolean)) {
+    try { const r = await fetch(u); if (!r.ok) continue; const bl = await r.blob(); if (!bl.type.startsWith("image/") || bl.size < 2000) continue;
+      await IDB.put("covers", b.id, bl); b.has_cover = true; await LocalBE.saveMeta(b); LocalBE.coverCache[b.id] = URL.createObjectURL(bl); return true; } catch {}
+  }
+  return false;
+}
+
+/* ---------- pipeline ---------- */
+async function enrich(b, {force = false, log = () => {}} = {}){
+  const prev = bInfo(b) || {};
+  const info = {...prev, errors: []};
+  const title = cleanTitle(bTitle(b)) || bTitle(b), author = bAuthor(b);
+  if (force || !prev.at) {
+    try { log("Wikidata"); const w = await findWork(title, author);
+      if (w) { info.wd = {...await workDetails(w.q), desc: w.desc}; info.wd.label ||= w.label; info.authorQ = w.authorQ; info.authorName = w.author; }
+      else { info.wd = null; info.errors.push("Œuvre introuvable sur Wikidata"); } }
+    catch(e) { info.errors.push("Wikidata : " + e.message); }
+    try { log("Wikipédia"); const w = info.wd?.wiki; info.wiki = await wikiIntro(w?.fr || w?.en); } catch(e) { info.errors.push("Wikipédia : " + e.message); }
+    try { log("Open Library"); info.ol = await openLib(title, author); } catch(e) { info.errors.push("Open Library : " + e.message); }
+    if (info.authorQ) { const k = aKey(info.authorName || author); const ex = Info.get(k);
+      if (force || !ex) { try { log("Auteur"); const a = await authorDetails(info.authorQ); a.wikiIntro = await wikiIntro(a.wiki.fr || a.wiki.en).catch(() => null); a.at = Date.now(); await Info.put(k, a); }
+        catch(e) { info.errors.push("Auteur : " + e.message); } }
+      info.authorKey = k; }
+    if (!b.has_cover) { log("Pochette"); await grabCover(b, [info.ol?.cover && `https://covers.openlibrary.org/b/id/${info.ol.cover}-L.jpg`, info.wiki?.image]); }
+    info.at = Date.now();
+  }
+  await Info.put("b:" + b.id, info);
+  return info;
+}
+
+let FILL = null;
+async function fillAll(silent){
+  if (FILL || !navigator.onLine) return;
+  const todo = BOOKS.filter(b => !bInfo(b)?.at);
+  if (!todo.length) { if (!silent) toast("Toutes les fiches sont déjà à jour ✓"); return; }
+  FILL = {stop: false}; let n = 0;
+  if (!silent) { openSheet(`<h3>ⓘ Récupérer les infos <button class="x" id="fillStop">Stop</button></h3>
+    <div class="note" id="fillMsg">…</div><div class="pbar"><i id="fillBar" style="width:0"></i></div>`, false);
+    $("#fillStop").onclick = () => { FILL.stop = true; }; }
+  for (const b of todo) {
+    if (FILL.stop || !navigator.onLine) break;
+    try { await enrich(b, {log: x => { const m = $("#fillMsg"); if (m) m.textContent = `${n+1}/${todo.length} · ${bTitle(b)} — ${x}`; }}); } catch {}
+    n++; const bar = $("#fillBar"); if (bar) bar.style.width = (n / todo.length * 100) + "%";
+    await new Promise(r => setTimeout(r, 500));
+  }
+  FILL = null; render();
+  if (!silent) closeSheet();
+}
+/* ---------- affichage du dossier ---------- */
+const ADAPT_ICON = t => /film|cin[ée]ma|movie/i.test(t) ? "🎬" : /s[ée]rie|t[ée]l[ée]|tv|anim/i.test(t) ? "📺" : /bd|bande|comic|manga|graphi|illustr/i.test(t) ? "🖼" :
+  /th[ée][aâ]tre|pi[eè]ce|play/i.test(t) ? "🎭" : /radio|audio|podcast/i.test(t) ? "📻" : /jeu|game|rôle|rpg/i.test(t) ? "🎮" : /op[ée]ra|music|chanson|album|ballet/i.test(t) ? "🎼" : "✨";
+const chipsH = arr => (arr||[]).filter(Boolean).length ? `<div class="seg" style="margin:4px 0 8px">${arr.filter(Boolean).map(x => `<span class="dchip">${esc(x)}</span>`).join("")}</div>` : "";
+const inLib = label => { const n = norm(cleanTitle(label)); return n && BOOKS.find(x => norm(cleanTitle(bTitle(x))) === n || norm(bInfo(x)?.wd?.label) === n); };
+const sec = (icon, title, body, open = true) => body ? `<details class="dsec" ${open ? "open" : ""}><summary>${icon} ${title}</summary><div class="dbody">${body}</div></details>` : "";
+const para = t => t ? `<p>${esc(t).replace(/\n+/g, "</p><p>")}</p>` : "";
+
+function openDossier(b){
+  const i = bInfo(b); const ai = i?.ai || {}; const wd = i?.wd; const cv = coverOf(b);
+  const year = bYear(b), genres = bGenres(b), ser = bSeries(b);
+  const author = i?.authorKey ? Info.get(i.authorKey) : null;
+  let h = `<h3>📖 Dossier <button class="x" data-close>×</button></h3>
+   <div class="dhead"><div class="cv" style="${cv ? `background-image:url('${cv}')` : `background:${bColor(b)}`}"></div><div>
+     <b class="dt">${esc(bTitle(b))}</b>
+     <div class="note">${i?.authorKey ? `<a href="#" id="dAuth">${esc(bAuthor(b))} ›</a>` : esc(bAuthor(b))}${year ? " · " + year : ""}${ai.titre_original && norm(ai.titre_original) !== norm(bTitle(b)) ? `<br>Titre original : <i>${esc(ai.titre_original)}</i>` : ""}
+     ${ser ? `<br>📚 ${esc(ser.label)}${ser.ord ? " — tome " + esc(ser.ord) : ""}` : ""}</div>
+     ${chipsH(genres)}</div></div>
+   <div class="btns" style="margin-top:0"><button class="ib acc" id="dPlay">▶ Écouter</button><button class="ib" id="dRef">↻ Actualiser</button></div>`;
+  if (!i?.at) h += `<p class="note" style="margin-top:14px">${navigator.onLine ? "Recherche des infos…" : "Pas encore d'infos : elles se chargent toutes seules dès que le téléphone a du réseau."}</p>`;
+  h += `<div style="height:8px"></div>`;
+  h += sec("📜", "Résumé (sans spoiler)", para(ai.resume_sans_spoiler) || para(i?.wiki?.extract) || (wd?.desc ? para(wd.desc) : ""));
+  h += sec("🔒", "Résumé intégral — SPOILERS", para(ai.resume_complet_spoilers), false);
+  if (ser) {
+    const mem = wd?.series?.members?.length ? wd.series.members : (ai.serie?.ordre_lecture || []).map((m, k) => ({label: m.titre, year: m.annee, ord: String(k + 1)}));
+    const miss = mem.filter(m => !inLib(m.label)).length;
+    h += sec("📚", `Série : ${esc(ser.label)}`, (mem.length ? `<div class="list">${mem.map(m => { const own = inLib(m.label); const cur = own?.id === b.id;
+        return `<div class="li ${cur ? "cur" : ""}"><span class="n">${esc(m.ord || "·")}</span><span class="tt"><b>${esc(m.label)}</b><span>${m.year || ""}</span></span><span class="d">${cur ? "▶ ici" : own ? "✓ à toi" : "○ manque"}</span></div>`; }).join("")}</div>
+        <p class="note">${miss ? `Il te manque ${miss} tome${miss>1?"s":""} sur ${mem.length}.` : "Tu as toute la série ✓"}</p>` : "")
+      + (ai.serie?.ordre_chronologique_interne ? `<p class="note">⏳ Ordre chronologique de l'histoire : ${esc(ai.serie.ordre_chronologique_interne)}</p>` : "")
+      + (wd?.follows || wd?.followedBy ? `<p class="note">${wd.follows ? "◀ Précédent : " + esc(wd.follows.label) : ""}${wd.follows && wd.followedBy ? "<br>" : ""}${wd.followedBy ? "▶ Suivant : " + esc(wd.followedBy.label) : ""}</p>` : ""));
+  }
+  // adaptations : Wikidata + IA, fusionnées
+  const ads = [...(wd?.adaptations || [])];
+  for (const a of ai.adaptations || []) { if (!a?.titre) continue; const ex = ads.find(x => norm(x.title) === norm(a.titre) && (!x.year || !a.annee || Math.abs(x.year - +a.annee) < 2));
+    if (ex) { ex.note ||= a.note; ex.by.length || (a.par && ex.by.push(a.par)); if (!ex.types.length && a.type) ex.types.push(a.type); }
+    else ads.push({title: a.titre, types: [a.type || ""], year: +a.annee || null, by: a.par ? [a.par] : [], note: a.note, src: "IA"}); }
+  ads.sort((x, y) => (x.year || 9999) - (y.year || 9999));
+  h += sec("🎬", `Adaptations (${ads.length})`, ads.length ? `<div class="list">${ads.map(a => `<div class="li"><span class="n" style="font-size:20px">${ADAPT_ICON(a.types.join(" "))}</span>
+      <span class="tt"><b>${esc(a.title)}</b><span>${esc(a.types.filter(Boolean).join(", "))}${a.by.length ? " · " + esc(a.by.join(", ")) : ""}${a.note ? " · " + esc(a.note) : ""}</span></span>
+      <span class="d">${a.year || ""}<br><small style="opacity:.6">${a.src}</small></span></div>`).join("")}</div>` : (i?.at ? `<p class="note">Aucune adaptation connue des sources.</p>` : ""));
+  // titres dans le monde
+  const titles = {}; const add = (lang, t) => { if (!t) return; const k = norm(t); if (!k) return; (titles[k] ||= {t, langs: new Set()}).langs.add(lang); };
+  Object.entries(wd?.labels || {}).forEach(([l, t]) => add(l, t)); Object.entries(wd?.alts || {}).forEach(([l, ts]) => ts.forEach(t => add(l, t)));
+  (ai.titres_alternatifs || []).forEach(x => add(x.langue || "?", x.titre));
+  const tl = Object.values(titles).filter(x => norm(x.t) !== norm(bTitle(b)));
+  h += sec("🌍", `Titres dans le monde (${tl.length})`, tl.length ? `<div class="list">${tl.slice(0, 80).map(x => `<div class="li" style="padding:6px 10px"><span class="tt"><b>${esc(x.t)}</b><span>${esc([...x.langs].map(langName).join(", "))}</span></span></div>`).join("")}</div>` : "", false);
+  h += sec("🔍", "Interprétations", (ai.interpretations || []).map(x => `<div class="dcard"><b>${esc(x.angle)}</b>${x.qui ? ` <span class="note">— ${esc(x.qui)}</span>` : ""}<p>${esc(x.lecture)}</p></div>`).join(""));
+  h += sec("📣", "Réception dans le monde", (ai.reception || []).map(x => `<div class="dcard"><b>${esc(x.ou_quand)}</b><p>${esc(x.accueil)}</p></div>`).join(""));
+  h += sec("⚠", "Controverses & censure", (ai.controverses || []).map(x => typeof x === "string" ? `<div class="dcard"><p>${esc(x)}</p></div>` : `<div class="dcard"><b>${esc(x.ou_quand || "")}</b><p>${esc(x.quoi)}</p></div>`).join(""));
+  h += sec("🧭", "Thèmes, lieux, époque", [ai.themes?.length && `<b>Thèmes</b>${chipsH(ai.themes)}`, wd?.subjects?.length && `<b>Sujets</b>${chipsH(wd.subjects)}`,
+    (wd?.places?.length || i?.ol?.places?.length) && `<b>Lieux</b>${chipsH([...(wd?.places||[]), ...(i?.ol?.places||[])].slice(0, 20))}`,
+    (wd?.periods?.length || i?.ol?.times?.length) && `<b>Époque</b>${chipsH([...(wd?.periods||[]), ...(i?.ol?.times||[])])}`,
+    ai.style && `<b>Style</b>${para(ai.style)}`, i?.ol?.subjects?.length && `<b>Mots-clés Open Library</b>${chipsH(i.ol.subjects)}`].filter(Boolean).join(""), false);
+  h += sec("👥", "Personnages", (ai.personnages?.length ? `<div class="list">${ai.personnages.map(p => `<div class="li" style="padding:6px 10px"><span class="tt"><b>${esc(p.nom)}</b><span>${esc(p.role)}</span></span></div>`).join("")}</div>` : "")
+    + (wd?.characters?.length && !ai.personnages?.length ? chipsH(wd.characters) : ""), false);
+  h += sec("🖋", "Contexte d'écriture & héritage", [para(ai.contexte_ecriture), ai.influences_et_heritage && `<b>Héritage</b>${para(ai.influences_et_heritage)}`,
+    wd?.inspired?.length && `<b>Inspiré par</b>${chipsH(wd.inspired)}`, wd?.basedOn?.length && `<b>D'après</b>${chipsH(wd.basedOn)}`].filter(Boolean).join(""), false);
+  h += sec("🏆", "Prix", chipsH(wd?.awards), false);
+  h += sec("💡", "Anecdotes", (ai.anecdotes || []).map(x => `<div class="dcard"><p>${esc(x)}</p></div>`).join(""), false);
+  h += sec("❤", "Si tu aimes ce livre…", (ai.si_tu_aimes || []).map(x => `<div class="dcard"><b>${esc(x.titre)}</b> <span class="note">— ${esc(x.auteur)}${inLib(x.titre) ? " · ✓ déjà sur ton étagère" : ""}</span><p>${esc(x.pourquoi)}</p></div>`).join(""), false);
+  if (author || ai.auteur) h += sec("✍", `L'auteur : ${esc(bAuthor(b))}`, `${author ? `<p class="note">${[author.born && "Né·e " + author.born.slice(0,4) + (author.bplace[0] ? " à " + author.bplace[0] : ""),
+      author.died && "mort·e " + author.died.slice(0,4) + (author.dplace[0] ? " à " + author.dplace[0] : "")].filter(Boolean).join(" · ")}</p>` : ""}
+    ${para(ai.auteur?.bio || author?.wikiIntro?.extract?.slice(0, 900))}${i?.authorKey ? `<button class="ib" id="dAuth2">Fiche auteur complète ›</button>` : ""}`, false);
+  const src = [wd && `<a href="https://www.wikidata.org/wiki/${wd.q}" target="_blank" rel="noopener">Wikidata ${wd.q}</a>`, i?.wiki?.url && `<a href="${esc(i.wiki.url)}" target="_blank" rel="noopener">Wikipédia (${i.wiki.lang})</a>`,
+    i?.ol?.key && `<a href="https://openlibrary.org${esc(i.ol.key)}" target="_blank" rel="noopener">Open Library</a>`].filter(Boolean).join(" · ");
+  h += sec("🔗", "Sources & fiabilité", `${src ? `<p>${src}</p>` : ""}${ai._at ? `<p class="note">Partie IA : ${esc(ai._model)} le ${new Date(ai._at).toLocaleDateString("fr-FR")} — à recouper, une IA peut se tromper.${ai.fiabilite ? "<br>Note de fiabilité : " + esc(ai.fiabilite) : ""}</p>` : ""}
+    ${i?.at ? `<p class="note">Sources consultées le ${new Date(i.at).toLocaleDateString("fr-FR")}.</p>` : ""}${i?.errors?.length ? `<p class="note">⚠ ${i.errors.map(esc).join("<br>⚠ ")}</p>` : ""}`, false);
+  openSheet(h);
+  $("#dPlay").onclick = () => { closeSheet(); if (player.book?.id === b.id) { showDeck(); play(); } else openBook(b, true); };
+  const run = async (opts, btn) => { btn.disabled = true; const old = btn.textContent;
+    try { await enrich(b, {...opts, log: s => btn.textContent = "… " + s}); render(); openDossier(b); }
+    catch(e) { btn.textContent = old; btn.disabled = false; toast(e.message, 5000); } };
+  $("#dRef").onclick = e => run({force: true}, e.target);
+  if (!i?.at && navigator.onLine) enrich(b).then(() => { if ($("#dRef")) openDossier(b); render(); }).catch(() => {});
+  for (const id of ["#dAuth", "#dAuth2"]) { const el = $(id); if (el) el.onclick = ev => { ev.preventDefault(); openAuthor(i.authorKey, b); }; }
+}
+
+function openAuthor(key, from){
+  const a = Info.get(key); if (!a) return;
+  const mine = BOOKS.filter(x => bInfo(x)?.authorKey === key);
+  const yrs = [a.born?.slice(0,4), a.died?.slice(0,4)].filter(Boolean).join(" – ");
+  let h = `<h3>✍ ${esc(a.label || bAuthor(from))} <button class="x" data-close>×</button></h3>
+    <p class="note">${[yrs, a.native && a.native !== a.label && a.native, a.desc].filter(Boolean).map(esc).join(" · ")}</p>
+    ${a.pseudos.length ? `<p class="note">Pseudonymes : ${a.pseudos.map(esc).join(", ")}</p>` : ""}
+    <p class="note">${[a.bplace[0] && "Naissance : " + a.bplace[0], a.dplace[0] && "Mort : " + a.dplace[0], a.countries.length && "Nationalité : " + a.countries.join(", ")].filter(Boolean).map(esc).join("<br>")}</p>
+    <button class="ib" id="aBack">◀ Retour au dossier</button><div style="height:8px"></div>`;
+  h += sec("📜", "Biographie", para(a.ai?.bio) + (a.wikiIntro?.extract ? `<details><summary class="note">Intro Wikipédia</summary>${para(a.wikiIntro.extract)}</details>` : ""));
+  h += sec("🎨", "Style, mouvements, genres", (a.ai?.style ? para(a.ai.style) : "") + chipsH([...a.movements, ...a.genres]) + chipsH(a.jobs));
+  h += sec("🧬", "Influences", (a.infl.length ? `<b>A été influencé·e par</b>${chipsH(a.infl)}` : "") + ((a.influenced.length || a.ai?.a_influence?.length) ? `<b>A influencé</b>${chipsH([...new Set([...a.influenced, ...(a.ai?.a_influence||[])])])}` : ""), false);
+  h += sec("📅", `Bibliographie chronologique (${a.works.length})`, `<p class="note">✓ = sur ton étagère · ${mine.length} livre${mine.length>1?"s":""} à toi</p><div class="list">${a.works.map(w => { const own = inLib(w.label);
+      return `<div class="li" style="padding:6px 10px"><span class="n">${w.year ?? "?"}</span><span class="tt"><b>${esc(w.label)}</b><span>${esc([w.type, w.series].filter(Boolean).join(" · "))}</span></span><span class="d">${own ? "✓" : ""}</span></div>`; }).join("")}</div>`);
+  h += sec("🏆", "Prix", chipsH(a.awards), false);
+  h += sec("🔗", "Sources", `<p><a href="https://www.wikidata.org/wiki/${a.q}" target="_blank" rel="noopener">Wikidata</a>${a.wikiIntro?.url ? ` · <a href="${esc(a.wikiIntro.url)}" target="_blank" rel="noopener">Wikipédia</a>` : ""}</p>`, false);
+  openSheet(h);
+  $("#aBack").onclick = () => openDossier(from);
+}
+
+/* ================================================================
+   Feuilles : fiche livre, réglages
+   ================================================================ */
+function openSheet(html, closable = true){ $("#sheet").innerHTML = html; $("#veil").classList.remove("hide"); $("#veil").dataset.closable = closable ? 1 : ""; return $("#sheet"); }
+function closeSheet(){ $("#veil").classList.add("hide"); $("#sheet").innerHTML = ""; }
+$("#veil").addEventListener("click", e => { if ((e.target === $("#veil") && $("#veil").dataset.closable) || e.target.closest("[data-close]")) closeSheet(); });
+
+function openBookSheet(b, fresh){
+  const st = bs(b.id); let color = bColor(b), status = bStatus(b), rating = st.rating || 0;
+  const allShelves = [...new Set(BOOKS.flatMap(bShelves))].sort(natcmp);
+  const cv = coverOf(b);
+  openSheet(`<h3>✎ ${fresh ? "Nouveau livre — vérifie la fiche" : "Fiche du livre"} <button class="x" data-close>×</button></h3>
+   <div class="cvpick"><div class="cv" id="bkCv" style="${cv ? `background-image:url('${cv}')` : `background:${color}`}"></div>
+     <div class="note">${b.files.length} fichier${b.files.length>1?"s":""} · ${b.chapters.length} chapitres · ${fmtLong(bDur(b))}
+     ${true ? `<br><button class="ib" id="bkCvBtn" style="margin-top:6px">🖼 Changer la pochette</button>` : ""}</div></div>
+   <div style="height:12px"></div>
+   <label class="fld"><span>Titre</span><input id="bkT" value="${esc(bTitle(b))}"></label>
+   <div class="row2"><label class="fld"><span>Auteur</span><input id="bkA" value="${esc(bAuthor(b))}"></label>
+   <label class="fld"><span>Narrateur</span><input id="bkN" value="${esc(bNarr(b))}"></label></div>
+   <div class="fld"><span>Statut</span><div class="seg" id="bkS">${Object.entries(STATUS).map(([k,l]) => `<button data-v="${k}" class="${k===status?"on":""}">${l}</button>`).join("")}</div></div>
+   <label class="fld"><span>Étagères (séparées par des virgules) — ex : Fantastique, Nouvelles, Pour dormir</span>
+     <input id="bkSh" list="shelfList" value="${esc(bShelves(b).join(", "))}"><datalist id="shelfList">${allShelves.map(s => `<option value="${esc(s)}">`).join("")}</datalist></label>
+   ${allShelves.length ? `<div class="seg" style="margin:-4px 0 12px">${allShelves.map(s => `<button data-addsh="${esc(s)}">+ ${esc(s)}</button>`).join("")}</div>` : ""}
+   <div class="fld"><span>Note & favori</span><div style="display:flex;align-items:center;gap:14px"><div class="stars" id="bkR">${[1,2,3,4,5].map(i => `<button data-r="${i}" class="${i<=rating?"on":""}">★</button>`).join("")}</div>
+     <label style="display:flex;gap:6px;align-items:center;white-space:nowrap"><input type="checkbox" id="bkF" ${st.fav ? "checked" : ""}> Favori (face ★)</label></div></div>
+   <div class="fld"><span>Couleur de l'étiquette</span><div class="swatches" id="bkC">${LABELS.map(([c,n]) => `<button class="sw ${c===color?"on":""}" title="${n}" data-c="${c}" style="background:${c}"></button>`).join("")}</div></div>
+   <div class="btns"><button class="ib acc" id="bkOk">Enregistrer</button><button class="ib" id="bkDos">📖 Dossier</button>
+     <button class="ib" id="bkReset">⏪ Remettre au début</button>
+     ${true ? `<button class="ib danger" id="bkDel">🗑 Supprimer</button>` : ""}</div>`);
+  $("#bkS").onclick = e => { const v = e.target.dataset.v; if (!v) return; status = v; [...$("#bkS").children].forEach(x => x.classList.toggle("on", x.dataset.v === v)); };
+  $("#bkR").onclick = e => { const r = +e.target.dataset.r; if (!r) return; rating = rating === r ? 0 : r; [...$("#bkR").children].forEach((x,i) => x.classList.toggle("on", i < rating)); };
+  $("#bkC").onclick = e => { const c = e.target.dataset.c; if (!c) return; color = c; [...$("#bkC").children].forEach(x => x.classList.toggle("on", x.dataset.c === c)); if (!cv) $("#bkCv").style.background = c; };
+  document.querySelectorAll("[data-addsh]").forEach(x => x.onclick = () => { const cur = $("#bkSh").value.split(",").map(s=>s.trim()).filter(Boolean);
+    if (!cur.includes(x.dataset.addsh)) cur.push(x.dataset.addsh); $("#bkSh").value = cur.join(", "); });
+  if ($("#bkCvBtn")) $("#bkCvBtn").onclick = () => { $("#fCover").onchange = async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+      await IDB.put("covers", b.id, f); b.has_cover = true; await LocalBE.saveMeta(b); LocalBE.coverCache[b.id] = URL.createObjectURL(f);
+      $("#bkCv").style.cssText = `background-image:url('${LocalBE.coverCache[b.id]}')`; }; $("#fCover").click(); };
+  $("#bkOk").onclick = () => {
+    const t = $("#bkT").value.trim(), a = $("#bkA").value.trim(), n = $("#bkN").value.trim();
+    setBook(b.id, { title: t && t !== b.title ? t : null, author: a && a !== b.author ? a : null, narrator: n !== (b.narrator||"") ? n : null,
+      status, rating: rating || null, fav: $("#bkF").checked || null, color: color !== hashCol(b.id) ? color : null,
+      shelves: (() => { const s = [...new Set($("#bkSh").value.split(",").map(x => x.trim()).filter(Boolean))]; return s.length ? s : null; })() });
+    closeSheet(); render(); if (player.book?.id === b.id) { drawDeckStatic(); updateUI(); mediaMeta(); } toast("Fiche enregistrée");
+  };
+  $("#bkDos").onclick = () => openDossier(b);
+  $("#bkReset").onclick = () => { setBook(b.id, {pos: {file:0, t:0}, status: "a-lire"}); if (player.book?.id === b.id) seekG(0); closeSheet(); render(); };
+  if ($("#bkDel")) $("#bkDel").onclick = async () => { if (!confirm(`Supprimer « ${bTitle(b)} » de l'appli ? (les fichiers copiés seront effacés)`)) return;
+    if (player.book?.id === b.id) { pause(); A.src = ""; player.book = null; }
+    await LocalBE.remove(b); Info.del("b:" + b.id); BOOKS = BOOKS.filter(x => x.id !== b.id); closeSheet(); showLib(); toast("Livre supprimé"); };
+}
+
+async function openSettings(){
+  const s = S(); let storage = "";
+  if (navigator.storage?.estimate) { const e = await navigator.storage.estimate(); const p = await navigator.storage.persisted?.();
+    storage = `<p class="note">Stockage utilisé : <b>${(e.usage/1e9).toFixed(2)} Go</b> sur ${(e.quota/1e9).toFixed(0)} Go dispo pour l'appli · ${p ? "✅ protégé (Android ne l'effacera pas)" : "⚠ non protégé : installe l'appli sur l'écran d'accueil"}</p>`; }
+  const seg = (id, vals, cur, suf="") => `<div class="seg" id="${id}">${vals.map(v => `<button data-v="${v}" class="${v==cur?"on":""}">${v}${suf}</button>`).join("")}</div>`;
+  openSheet(`<h3>⚙ Réglages <button class="x" data-close>×</button></h3>
+   ${storage}<div class="btns" style="margin:0 0 14px"><button class="ib acc" data-act="addfiles">＋ Fichiers</button><button class="ib" data-act="adddir">＋ Dossier(s)</button></div>
+   <div class="btns" style="margin:0 0 14px"><button class="ib" id="fillAll">ⓘ Récupérer les infos de tous les livres</button></div>
+   <p class="note" style="margin-top:-6px">Résumé, série, année, genres, adaptations, auteur — depuis Wikipédia, Wikidata et Open Library. Ça se fait aussi tout seul après chaque import.</p>
+   <h3 style="font-size:15px">▶ Lecture</h3>
+   <div class="fld"><span>Bouton ◀◀ recule de</span>${seg("stBack",[5,10,15,30,60],s.back||15," s")}</div>
+   <div class="fld"><span>Bouton ▶▶ avance de</span>${seg("stFwd",[10,15,30,60,120],s.fwd||30," s")}</div>
+   <div class="fld"><span>Recul auto à la reprise (×3 après 30 min de pause)</span>${seg("stRw",[0,3,5,10,20],s.rewind??5," s")}</div>
+   <label class="fld" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="stClick" ${s.clicks!==false?"checked":""}> Bruits de touches mécaniques</label>
+   <label class="fld" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="stHiss" ${s.hiss?"checked":""}> Souffle de bande (léger « shhh » de cassette)</label>
+   <p class="note">Maintenir ◀◀ ou ▶▶ = rembobinage/avance rapide continue. Double-tap sur VITESSE = ×1. Les touches du casque et de l'écran verrouillé marchent (◀◀/▶▶ = chapitres).</p>`);
+  const bindSeg = (id, key) => $("#"+id).onclick = e => { const v = e.target.dataset.v; if (v == null) return; setSetting({[key]: +v}); [...$("#"+id).children].forEach(x => x.classList.toggle("on", x.dataset.v === v)); if (player.book) drawDeckStatic(); };
+  bindSeg("stBack","back"); bindSeg("stFwd","fwd"); bindSeg("stRw","rewind");
+  $("#stClick").onchange = e => setSetting({clicks: e.target.checked});
+  $("#stHiss").onchange = e => { setSetting({hiss: e.target.checked}); hiss(!A.paused); };
+  $("#fillAll").onclick = () => { closeSheet(); fillAll(); };
+}
+
+/* ================================================================
+   Démarrage
+   ================================================================ */
+(async function boot(){
+  BE = LocalBE;
+  try { await BE.load(); } catch(e) { toast("Erreur de chargement : " + e.message, 6000); }
+  await LocalBE.warmCovers(); await Info.loadAll();
+  if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
+  A.volume = S().vol ?? 1;
+  render(); setTimeout(() => fillAll(true), 4000);
+  const last = BOOKS.filter(b => bs(b.id).last).sort((a,b) => bs(b.id).last - bs(a.id).last)[0];
+  if (last) { player.book = last; const p = bs(last.id).pos || {file:0,t:0}; loadFile(Math.min(p.file, last.files.length-1), p.t||0, false).then(() => { mediaMeta(); renderMini(); }); }
+})();
+</script>
+</body>
+</html>
