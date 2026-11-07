@@ -64,15 +64,27 @@ main{max-width:1200px;margin:0 auto;padding:14px 16px 110px}
 .grp:after{content:"";flex:1;height:1px;background:var(--line)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px 14px}
 .tape{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;background:none;border:none;padding:0;text-align:left;position:relative;display:flex;flex-direction:column;gap:7px;min-width:0}
-.case{position:relative;aspect-ratio:70/109;width:100%;border-radius:5px;overflow:hidden;
-  background:#0d0f15;box-shadow:0 1px 0 #ffffff30 inset,0 10px 18px -6px #000c,0 2px 4px #0008;transition:transform .18s}
-.tape:hover .case,.tape:focus-visible .case{transform:translateY(-3px)}
-.tape.press .case{transform:scale(.96);transition:transform .45s}
+.tape{perspective:1000px}
+.case{position:relative;aspect-ratio:70/109;width:89%;margin-left:8%;container-type:inline-size;transform-style:preserve-3d;
+  transform:rotateY(24deg);transform-origin:50% 50%;transition:transform .3s cubic-bezier(.2,.8,.3,1)}
+.tape:hover .case,.tape:focus-visible .case{transform:rotateY(14deg) translateY(-4px)}
+.tape.press .case{transform:rotateY(30deg) scale(.95);transition:transform .45s}
+/* face avant : couvercle en plastique transparent */
+.front{position:absolute;inset:0;border-radius:4px 5px 5px 4px;overflow:hidden;background:#0d0f15;
+  box-shadow:0 18px 22px -10px #000d,6px 10px 16px -6px #0009,0 0 0 1px #ffffff14}
+/* tranche (épaisseur 12 mm sur 70) : la jaquette se replie dessus */
+.edge{position:absolute;top:0;bottom:0;left:0;width:17cqw;transform-origin:left center;transform:translateZ(-17cqw) rotateY(-90deg);
+  border-radius:3px;overflow:hidden;background:linear-gradient(90deg,#00000055,#0000 30%,#0000 70%,#00000070),var(--lab);color:var(--labink);
+  box-shadow:inset 0 0 0 1px #ffffff22}
+.edge:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#ffffff30,#ffffff08 18%,transparent 40%,#00000030 100%)}
+.edge span{position:absolute;inset:6% 0 18%;writing-mode:vertical-rl;transform:rotate(180deg);display:block;text-align:start;padding-top:2px;
+  font:800 clamp(8px,8cqw,12px)/1 var(--ui);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.edge i{position:absolute;left:18%;right:18%;bottom:5%;height:9%;border-radius:2px;background:linear-gradient(90deg,#e94f37 0 33%,#f6ae2d 33% 66%,#33a1fd 66%)}
 .peek .ph{display:flex;gap:14px;align-items:flex-start;margin-bottom:10px}
 .peek .ph img,.peek .ph .cv{width:96px;aspect-ratio:2/3;object-fit:cover;border-radius:6px;flex:none;background:#333}
 .peek .ph b{display:block;font-size:18px;line-height:1.2;margin-bottom:4px;text-wrap:balance}
 .peek .sum{line-height:1.55;font-size:15px;max-height:46dvh;overflow:auto}
-.tape:focus-visible{outline:none}.tape:focus-visible .case{outline:2px solid var(--accent);outline-offset:3px}
+.tape:focus-visible{outline:none}.tape:focus-visible .front{outline:2px solid var(--accent);outline-offset:2px}
 /* jaquette */
 .jc{position:absolute;inset:0 0 0 9.5%;display:flex;flex-direction:column;background:var(--lab,#f2e8cf);color:var(--labink,#16161a)}
 .jc .art{position:relative;flex:1;min-height:0;overflow:hidden;background:#222}
@@ -80,7 +92,7 @@ main{max-width:1200px;margin:0 auto;padding:14px 16px 110px}
 .jc .art.blank{background:
    radial-gradient(120% 70% at 50% 120%,#0000002a,transparent 60%),
    repeating-linear-gradient(0deg,#ffffff10 0 1px,transparent 1px 4px),var(--lab)}
-.jc .art.blank .big{position:absolute;inset:10% 9% auto;font:800 clamp(17px,5.2vw,24px)/1.05 var(--ui);letter-spacing:-.01em;
+.jc .art.blank .big{position:absolute;inset:10% 24% auto 9%;font:800 clamp(17px,5.2vw,24px)/1.05 var(--ui);letter-spacing:-.01em;
   text-wrap:balance;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;hyphens:manual;overflow-wrap:break-word}
 .jc .art.blank .mini-k7{position:absolute;left:9%;right:9%;bottom:8%;height:26%;border-radius:6px;background:#00000022;
   box-shadow:inset 0 0 0 2px #0000001f}
@@ -103,13 +115,17 @@ main{max-width:1200px;margin:0 auto;padding:14px 16px 110px}
   box-shadow:inset -1px 0 0 #ffffff22}
 .spine:before{content:"";position:absolute;inset:6% 30%;background:repeating-linear-gradient(0deg,#ffffff1c 0 2px,transparent 2px 6px);border-radius:2px}
 /* plastique : reflets */
-.case:after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:5px;
-  background:linear-gradient(118deg,#ffffff38 0%,#ffffff10 22%,transparent 23% 60%,#ffffff0d 61%,transparent 75%),
-             linear-gradient(0deg,#ffffff0a,transparent 30%);
-  box-shadow:inset 0 0 0 1px #ffffff2a,inset 0 0 0 3px #00000035}
+.front:after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;z-index:2;
+  background:linear-gradient(104deg,#ffffff00 0%,#ffffff2e 7%,#ffffff08 16%,transparent 17% 58%,#ffffff12 64%,transparent 74%),
+             radial-gradient(120% 50% at 70% -10%,#ffffff22,transparent 60%),
+             linear-gradient(0deg,#00000030,transparent 18%);
+  box-shadow:inset 0 0 0 1px #ffffff38,inset 0 0 0 3px #ffffff0d,inset 0 2px 0 #ffffff40,inset 0 -2px 0 #00000055,inset -3px 0 6px #00000040}
+/* reliefs moulés du couvercle */
+.front:before{content:"";position:absolute;left:9.5%;right:0;top:0;height:3.2%;z-index:2;pointer-events:none;
+  background:linear-gradient(#ffffff26,#ffffff05);border-bottom:1px solid #00000040}
 .case .prog{position:absolute;left:9.5%;right:0;bottom:0;height:4px;background:#0006;z-index:2}
 .case .prog i{display:block;height:100%;background:var(--accent)}
-.case .done{position:absolute;top:7px;left:calc(9.5% + 7px);z-index:2;font:800 10px/1 var(--ui);letter-spacing:.08em;padding:4px 6px;border-radius:4px;background:var(--ok);color:#0b1d10}
+.case .done{position:absolute;top:9px;z-index:3;left:calc(9.5% + 7px);z-index:2;font:800 10px/1 var(--ui);letter-spacing:.08em;padding:4px 6px;border-radius:4px;background:var(--ok);color:#0b1d10}
 .case .fav{position:absolute;top:30px;left:calc(9.5% + 7px);z-index:2;color:#ffd34d;font-size:16px;text-shadow:0 1px 2px #000}
 .tape .meta{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:0}
 .tape .meta b{color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
@@ -218,7 +234,7 @@ main{max-width:1200px;margin:0 auto;padding:14px 16px 110px}
 .cvpick .cv{width:70px;height:70px;border-radius:10px;background:#333 center/cover;flex:none}
 .stars button{background:none;border:none;font-size:24px;color:#555;padding:0 2px}
 .stars button.on{color:var(--warn)}
-.tape .dbtn{position:absolute;top:7px;right:7px;z-index:3;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:15px;
+.tape .dbtn{position:absolute;top:9px;right:9px;z-index:4;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:15px;
   background:#000a;color:#fff;border:1px solid #ffffff44;font-weight:700}
 .tape .dbtn.has{background:var(--blue)}
 .dhead{display:flex;gap:14px;align-items:flex-start;margin-bottom:10px}
@@ -727,6 +743,8 @@ function tileHTML(b){
   const ser = bSeries(b);
   return `<button class="tape" data-open="${b.id}" aria-label="${esc(bTitle(b))}, ${esc(bAuthor(b))}">
     <div class="case" style="--lab:${col};--labink:${ink}">
+      <div class="edge"><span>${esc(bTitle(b))} · ${esc(bAuthor(b))}</span><i></i></div>
+      <div class="front">
       <div class="spine"></div>
       <div class="jc">
         ${cv ? `<div class="art"><img src="${esc(cv)}" alt="" loading="lazy" decoding="async"></div>`
@@ -738,6 +756,7 @@ function tileHTML(b){
       ${st === "termine" ? `<span class="done">FINI</span>` : ""}
       ${bs(b.id).fav ? `<span class="fav">★</span>` : ""}
       <span class="dbtn ${bInfo(b)?.at ? "has" : ""}" data-dos="${b.id}" title="Dossier" role="button" aria-label="Dossier">ⓘ</span>
+      </div>
     </div>
     <div class="meta"><b>${ser?.ord ? "T" + esc(ser.ord) + " · " : ""}${fmtLong(bDur(b))}${p>0 && p<1 ? ` · ${Math.round(p*100)}%` : ""}</b><span class="st" style="color:${STATUS_COL[st]}">${STATUS[st]}</span></div>
   </button>`;
@@ -1276,6 +1295,35 @@ function openCoverPicker(b, back){
   run();
 }
 
+/* ---------- résumés ---------- */
+const titleMatch = (x, q) => { const n = norm(cleanTitle(x) || x), t = norm(cleanTitle(q) || q); if (!n || !t) return false;
+  return n === t || n.startsWith(t + " ") || t.startsWith(n + " ") || (t.length > 6 && n.includes(t)) || t.split(" ").filter(w => w.length > 3).every(w => n.includes(w)); };
+const htmlText = h => { try { const d = new DOMParser().parseFromString(String(h || "").replace(/<br\s*\/?>|<\/p>/gi, "\n"), "text/html"); return (d.body.textContent || "").replace(/\n{3,}/g, "\n\n").trim(); } catch { return String(h || ""); } };
+async function fetchSummary(b, info){
+  const t = cleanTitle(bTitle(b)) || bTitle(b), a = /inconnu/i.test(bAuthor(b)) ? "" : bAuthor(b);
+  // 1. Apple Livres : texte de 4e de couverture, en français
+  for (const media of ["audiobook", "ebook"]) {
+    if (info.apple?.desc) break;
+    try { const j = await jsonp(`https://itunes.apple.com/search?term=${encodeURIComponent((t + " " + a).trim())}&media=${media}&country=FR&limit=10`);
+      const hit = (j.results || []).find(r => titleMatch(r.collectionName || r.trackName || "", t) && (!a || authorMatches(r.artistName || "", a)) && r.description);
+      if (hit) info.apple = {desc: htmlText(hit.description), url: hit.collectionViewUrl || hit.trackViewUrl || "", src: media === "audiobook" ? "Apple Livres (livre audio)" : "Apple Livres"}; } catch {}
+  }
+  // 2. Wikipédia FR : article du roman (« Glacé (roman) »)
+  if (!info.wiki?.extract) {
+    try { const j = await getJSON(`https://fr.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent((t + " " + a).trim())}&srlimit=5&format=json&origin=*`);
+      const pg = (j.query?.search || []).find(x => titleMatch(x.title.replace(/\s*\([^)]*\)\s*$/, ""), t) && !(a && norm(x.title) === norm(a)));
+      if (pg) info.wiki = await wikiIntro("https://fr.wikipedia.org/wiki/" + encodeURIComponent(pg.title.replace(/ /g, "_"))); } catch {}
+  }
+  // 3. Google Livres (souvent limité sans clé)
+  if (!info.apple?.desc && !info.wiki?.extract) {
+    try { const j = await getJSON(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(`intitle:${t}` + (a ? ` inauthor:${a}` : ""))}&maxResults=8`);
+      const v = (j.items || []).map(x => x.volumeInfo || {}).find(v => v.description && titleMatch(v.title || "", t) && (!a || authorMatches((v.authors || []).join(" "), a)));
+      if (v) info.gbooks = {desc: htmlText(v.description), src: "Google Livres"}; } catch {}
+  }
+  info.sumTried = Date.now();
+  return info;
+}
+
 /* ---------- pipeline ---------- */
 async function enrich(b, {force = false, log = () => {}} = {}){
   const prev = bInfo(b) || {};
@@ -1292,6 +1340,7 @@ async function enrich(b, {force = false, log = () => {}} = {}){
       if (force || !ex) { try { log("Auteur"); const a = await authorDetails(info.authorQ); a.wikiIntro = await wikiIntro(a.wiki.fr || a.wiki.en).catch(() => null); a.at = Date.now(); await Info.put(k, a); }
         catch(e) { info.errors.push("Auteur : " + e.message); } }
       info.authorKey = k; }
+    log("Résumé"); await fetchSummary(b, info);
     if (!b.has_cover && !b.cover_url) { log("Pochette"); if (!await autoCover(b)) await grabCover(b, [info.ol?.cover && `https://covers.openlibrary.org/b/id/${info.ol.cover}-L.jpg`, info.wiki?.image]); }
     info.at = Date.now();
   }
@@ -1302,7 +1351,7 @@ async function enrich(b, {force = false, log = () => {}} = {}){
 let FILL = null;
 async function fillAll(silent){
   if (FILL || !navigator.onLine) return;
-  const todo = BOOKS.filter(b => !bInfo(b)?.at || (!b.has_cover && !b.cover_url && !bs(b.id).coverTried));
+  const todo = BOOKS.filter(b => !bInfo(b)?.at || !bInfo(b)?.sumTried || (!b.has_cover && !b.cover_url && !bs(b.id).coverTried));
   if (!todo.length) { if (!silent) toast("Toutes les fiches sont déjà à jour ✓"); return; }
   FILL = {stop: false}; let n = 0;
   if (!silent) { openSheet(`<h3>ⓘ Récupérer les infos <button class="x" id="fillStop">Stop</button></h3>
@@ -1310,7 +1359,7 @@ async function fillAll(silent){
     $("#fillStop").onclick = () => { FILL.stop = true; }; }
   for (const b of todo) {
     if (FILL.stop || !navigator.onLine) break;
-    try { if (bInfo(b)?.at) { await autoCover(b); n++; continue; } await enrich(b, {log: x => { const m = $("#fillMsg"); if (m) m.textContent = `${n+1}/${todo.length} · ${bTitle(b)} — ${x}`; }}); } catch {}
+    try { if (bInfo(b)?.at) { if (!bInfo(b).sumTried) await Info.put("b:" + b.id, await fetchSummary(b, {...bInfo(b)})); await autoCover(b); n++; continue; } await enrich(b, {log: x => { const m = $("#fillMsg"); if (m) m.textContent = `${n+1}/${todo.length} · ${bTitle(b)} — ${x}`; }}); } catch {}
     n++; const bar = $("#fillBar"); if (bar) bar.style.width = (n / todo.length * 100) + "%";
     await new Promise(r => setTimeout(r, 500));
   }
@@ -1338,7 +1387,9 @@ function openDossier(b){
    <div class="btns" style="margin-top:0"><button class="ib acc" id="dPlay">▶ Écouter</button><button class="ib" id="dRef">↻ Actualiser</button></div>`;
   if (!i?.at) h += `<p class="note" style="margin-top:14px">${navigator.onLine ? "Recherche des infos…" : "Pas encore d'infos : elles se chargent toutes seules dès que le téléphone a du réseau."}</p>`;
   h += `<div style="height:8px"></div>`;
-  h += sec("📜", "Résumé (sans spoiler)", para(ai.resume_sans_spoiler) || para(i?.wiki?.extract) || (wd?.desc ? para(wd.desc) : ""));
+  { const sm = bSummary(b); const srcName = ai.resume_sans_spoiler ? "" : i?.apple?.desc ? i.apple.src : i?.gbooks?.desc ? i.gbooks.src : i?.wiki?.extract ? "Wikipédia" : "";
+    h += sec("📜", "Résumé", sm ? para(sm) + (srcName ? `<p class="note">Source : ${esc(srcName)}</p>` : "") : ""); }
+  if (i?.apple?.desc && i?.wiki?.extract) h += sec("📚", "Wikipédia", para(i.wiki.extract), false);
   h += sec("🔒", "Résumé intégral — SPOILERS", para(ai.resume_complet_spoilers), false);
   if (ser) {
     const mem = wd?.series?.members?.length ? wd.series.members : (ai.serie?.ordre_lecture || []).map((m, k) => ({label: m.titre, year: m.annee, ord: String(k + 1)}));
@@ -1418,7 +1469,7 @@ function openAuthor(key, from){
 /* ---------- appui long sur un boîtier : résumé ---------- */
 function bSummary(b){
   const i = bInfo(b); if (!i) return "";
-  return i.ai?.resume_sans_spoiler || i.wiki?.extract || i.wd?.desc || "";
+  return i.ai?.resume_sans_spoiler || i.apple?.desc || i.gbooks?.desc || i.wiki?.extract || i.wd?.desc || "";
 }
 function openPeek(b){
   const cv = coverOf(b), ser = bSeries(b), yr = bYear(b), sum = bSummary(b);
@@ -1429,8 +1480,9 @@ function openPeek(b){
     <div class="btns"><button class="ib acc" id="pkPlay">▶ Écouter</button><button class="ib" id="pkDos">📖 Dossier complet</button></div></div>`);
   $("#pkPlay").onclick = () => { closeSheet(); if (player.book?.id === b.id) { showDeck(); play(); } else openBook(b, true); };
   $("#pkDos").onclick = () => openDossier(b);
-  if (!sum && navigator.onLine) enrich(b, {force: !bInfo(b)?.at ? false : true}).then(() => { const el = $("#pkSum"); if (!el) return;
-    const t = bSummary(b); el.innerHTML = t ? `<p>${esc(t).replace(/\n+/g, "</p><p>")}</p>` : `<p class="note">Aucun résumé trouvé pour ce titre. Vérifie le titre et l'auteur dans ✎ Fiche.</p>`; render(); }).catch(() => {});
+  const getSum = async () => { const i = bInfo(b); if (!i?.at) return enrich(b); const n = await fetchSummary(b, {...i}); await Info.put("b:" + b.id, n); };
+  if (!sum && navigator.onLine) getSum().then(() => { const el = $("#pkSum"); if (!el) return;
+    const t = bSummary(b); el.innerHTML = t ? `<p>${esc(t).replace(/\n+/g, "</p><p>")}</p>` : `<p class="note">Aucun résumé trouvé pour « ${esc(bTitle(b))} » de ${esc(bAuthor(b))}. Si le titre ou l'auteur est mal écrit, corrige-le dans ✎ Fiche puis réessaie.</p>`; render(); }).catch(() => {});
 }
 (() => { // appui long (doigt) ou clic droit (souris)
   let timer = null, startX = 0, startY = 0, fired = false, el = null;
