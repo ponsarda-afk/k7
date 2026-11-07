@@ -1,5 +1,5 @@
 // K7 — service worker : garde l'appli dispo hors ligne (les livres sont dans IndexedDB, pas ici)
-const V = "k7-v5";
+const V = "k7-v6";
 const COVERS = "k7-covers"; // pochettes venues du web : gardées d'une version à l'autre
 const COVER_HOSTS = /(^|\.)(mzstatic\.com|books\.google\.com|googleusercontent\.com|covers\.openlibrary\.org|archive\.org|upload\.wikimedia\.org)$/;
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png"];

@@ -14,7 +14,7 @@
 :root{
   --bg:#14161f; --bg2:#1c1f2b; --card:#232736; --line:#323850;
   --ink:#eef1f7; --muted:#9099b0; --accent:#ff8a1f; --accent2:#ffb347;
-  --blue:#3d74e0; --lcd:#a9c0a6; --lcdink:#1d2b1f; --ok:#5ec27a; --warn:#e9b33c; --bad:#e2574c;
+  --blue:#3d74e0; --lcd:#030604; --lcdink:#3dff7a; --lcddim:#1d7a3f; --lcdglow:#3dff7a66; --ok:#5ec27a; --warn:#e9b33c; --bad:#e2574c;
   --r:14px;
   --ui:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --hand:"Permanent Marker","Comic Sans MS",cursive;
@@ -63,10 +63,15 @@ main{max-width:1200px;margin:0 auto;padding:14px 16px 110px}
 .grp{margin:18px 0 8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);display:flex;align-items:center;gap:10px}
 .grp:after{content:"";flex:1;height:1px;background:var(--line)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px 14px}
-.tape{background:none;border:none;padding:0;text-align:left;position:relative;display:flex;flex-direction:column;gap:7px;min-width:0}
+.tape{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;background:none;border:none;padding:0;text-align:left;position:relative;display:flex;flex-direction:column;gap:7px;min-width:0}
 .case{position:relative;aspect-ratio:70/109;width:100%;border-radius:5px;overflow:hidden;
   background:#0d0f15;box-shadow:0 1px 0 #ffffff30 inset,0 10px 18px -6px #000c,0 2px 4px #0008;transition:transform .18s}
 .tape:hover .case,.tape:focus-visible .case{transform:translateY(-3px)}
+.tape.press .case{transform:scale(.96);transition:transform .45s}
+.peek .ph{display:flex;gap:14px;align-items:flex-start;margin-bottom:10px}
+.peek .ph img,.peek .ph .cv{width:96px;aspect-ratio:2/3;object-fit:cover;border-radius:6px;flex:none;background:#333}
+.peek .ph b{display:block;font-size:18px;line-height:1.2;margin-bottom:4px;text-wrap:balance}
+.peek .sum{line-height:1.55;font-size:15px;max-height:46dvh;overflow:auto}
 .tape:focus-visible{outline:none}.tape:focus-visible .case{outline:2px solid var(--accent);outline-offset:3px}
 /* jaquette */
 .jc{position:absolute;inset:0 0 0 9.5%;display:flex;flex-direction:column;background:var(--lab,#f2e8cf);color:var(--labink,#16161a)}
@@ -145,16 +150,22 @@ main{max-width:1200px;margin:0 auto;padding:14px 16px 110px}
 .win svg.ins{animation:insert .55s cubic-bezier(.2,.9,.25,1.15)}
 @keyframes insert{from{transform:translateY(-38%) scale(.94);opacity:0}60%{opacity:1}}
 @media(prefers-reduced-motion:reduce){.win svg.ins{animation:none}}
-.lcd{margin:14px 2px 0;border-radius:10px;padding:8px 12px;background:linear-gradient(#b8cfb4,var(--lcd));color:var(--lcdink);
-  box-shadow:inset 0 2px 6px #0005,0 1px 0 #fff8;font-family:var(--lcdf);font-size:21px;line-height:1.05}
+.lcd{position:relative;overflow:hidden;margin:14px 2px 0;border-radius:10px;padding:9px 13px 8px;
+  background:radial-gradient(130% 120% at 50% 0%,#0b1a10 0%,var(--lcd) 70%);color:var(--lcdink);
+  box-shadow:inset 0 3px 10px #000,inset 0 0 0 1px #0f2a18,0 1px 0 #fff8;font-family:var(--lcdf);font-size:21px;line-height:1.08;
+  text-shadow:0 0 6px var(--lcdglow),0 0 1px var(--lcdink)}
+.lcd:after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,#00000038 0 1px,transparent 1px 3px),linear-gradient(115deg,#ffffff0d,transparent 40%)}
 .lcd .row{display:flex;justify-content:space-between;gap:8px;white-space:nowrap}
 .lcd .ch{overflow:hidden;text-overflow:ellipsis;max-width:70%}
-.lcd .dim{opacity:.55}
+.lcd .dim{color:var(--lcddim);text-shadow:none}
 .seek{position:relative;height:22px;margin-top:6px;cursor:pointer;touch-action:none}
-.seek .tr{position:absolute;left:0;right:0;top:9px;height:5px;border-radius:3px;background:#1d2b1f40}
-.seek .fl{position:absolute;left:0;top:9px;height:5px;border-radius:3px;background:var(--lcdink)}
-.seek .tk{position:absolute;top:9px;width:2px;height:5px;background:#1d2b1f55}
-.seek .kn{position:absolute;top:3px;width:6px;height:17px;margin-left:-3px;background:var(--lcdink);border-radius:2px}
+.seek .tr{position:absolute;left:0;right:0;top:9px;height:5px;border-radius:1px;
+  background:repeating-linear-gradient(90deg,#0f3a1f 0 6px,#071a0e 6px 8px)}
+.seek .fl{position:absolute;left:0;top:9px;height:5px;border-radius:1px;
+  background:repeating-linear-gradient(90deg,var(--lcdink) 0 6px,#16702f 6px 8px);box-shadow:0 0 8px var(--lcdglow)}
+.seek .tk{position:absolute;top:6px;width:2px;height:11px;background:var(--lcddim)}
+.seek .kn{position:absolute;top:3px;width:6px;height:17px;margin-left:-3px;background:var(--lcdink);border-radius:1px;box-shadow:0 0 8px var(--lcdink)}
 .panel{display:flex;align-items:center;gap:12px;margin:14px 4px 0}
 .dial{flex:1}
 .dial label{display:flex;justify-content:space-between;font-size:10px;font-weight:800;letter-spacing:.16em;margin-bottom:4px}
@@ -1403,6 +1414,38 @@ function openAuthor(key, from){
   openSheet(h);
   $("#aBack").onclick = () => openDossier(from);
 }
+
+/* ---------- appui long sur un boîtier : résumé ---------- */
+function bSummary(b){
+  const i = bInfo(b); if (!i) return "";
+  return i.ai?.resume_sans_spoiler || i.wiki?.extract || i.wd?.desc || "";
+}
+function openPeek(b){
+  const cv = coverOf(b), ser = bSeries(b), yr = bYear(b), sum = bSummary(b);
+  openSheet(`<div class="peek"><h3 style="margin-bottom:8px">Résumé <button class="x" data-close>×</button></h3>
+    <div class="ph">${cv ? `<img src="${esc(cv)}" alt="">` : `<div class="cv" style="background:${bColor(b)}"></div>`}
+      <div><b>${esc(bTitle(b))}</b><span class="note">${esc(bAuthor(b))}${yr ? " · " + yr : ""}${ser ? `<br>📚 ${esc(ser.label)}${ser.ord ? " — tome " + esc(ser.ord) : ""}` : ""}<br>${fmtLong(bDur(b))}${bNarr(b) ? " · lu par " + esc(bNarr(b)) : ""}</span></div></div>
+    <div class="sum" id="pkSum">${sum ? `<p>${esc(sum).replace(/\n+/g, "</p><p>")}</p>` : `<p class="note">${navigator.onLine ? "Recherche du résumé…" : "Pas encore de résumé : il se charge tout seul dès que le téléphone a du réseau."}</p>`}</div>
+    <div class="btns"><button class="ib acc" id="pkPlay">▶ Écouter</button><button class="ib" id="pkDos">📖 Dossier complet</button></div></div>`);
+  $("#pkPlay").onclick = () => { closeSheet(); if (player.book?.id === b.id) { showDeck(); play(); } else openBook(b, true); };
+  $("#pkDos").onclick = () => openDossier(b);
+  if (!sum && navigator.onLine) enrich(b, {force: !bInfo(b)?.at ? false : true}).then(() => { const el = $("#pkSum"); if (!el) return;
+    const t = bSummary(b); el.innerHTML = t ? `<p>${esc(t).replace(/\n+/g, "</p><p>")}</p>` : `<p class="note">Aucun résumé trouvé pour ce titre. Vérifie le titre et l'auteur dans ✎ Fiche.</p>`; render(); }).catch(() => {});
+}
+(() => { // appui long (doigt) ou clic droit (souris)
+  let timer = null, startX = 0, startY = 0, fired = false, el = null;
+  const cancel = () => { clearTimeout(timer); timer = null; el?.classList.remove("press"); };
+  document.addEventListener("pointerdown", e => {
+    const t = e.target.closest(".tape"); if (!t || e.target.closest("[data-dos],[data-cover]") || e.button > 0) return;
+    el = t; fired = false; startX = e.clientX; startY = e.clientY; t.classList.add("press");
+    timer = setTimeout(() => { fired = true; t.classList.remove("press"); try { navigator.vibrate?.(15); } catch {} openPeek(BOOKS.find(x => x.id === t.dataset.open)); }, 480);
+  });
+  document.addEventListener("pointermove", e => { if (timer && Math.hypot(e.clientX - startX, e.clientY - startY) > 10) cancel(); });
+  document.addEventListener("pointerup", cancel); document.addEventListener("pointercancel", cancel);
+  document.addEventListener("click", e => { if (fired && e.target.closest(".tape")) { e.stopPropagation(); e.preventDefault(); fired = false; } }, true);
+  document.addEventListener("contextmenu", e => { const t = e.target.closest(".tape"); if (!t) return; e.preventDefault();
+    if (!fired && e.pointerType !== "touch" && matchMedia("(hover:hover)").matches) { cancel(); openPeek(BOOKS.find(x => x.id === t.dataset.open)); } });
+})();
 
 /* ================================================================
    Feuilles : fiche livre, réglages
