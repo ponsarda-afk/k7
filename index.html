@@ -8,9 +8,15 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=VT323&family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="preload" href="fonts/vt323-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+@font-face{font-family:"Archivo";font-weight:400;font-display:swap;src:url(fonts/archivo-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Archivo";font-weight:500;font-display:swap;src:url(fonts/archivo-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Archivo";font-weight:600;font-display:swap;src:url(fonts/archivo-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Archivo";font-weight:700;font-display:swap;src:url(fonts/archivo-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Archivo";font-weight:800;font-display:swap;src:url(fonts/archivo-latin-800-normal.woff2) format("woff2")}
+@font-face{font-family:"VT323";font-display:swap;src:url(fonts/vt323-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Permanent Marker";font-display:swap;src:url(fonts/permanent-marker-latin-400-normal.woff2) format("woff2")}
 :root{
   --bg:#14161f; --bg2:#1c1f2b; --card:#232736; --line:#323850;
   --ink:#eef1f7; --muted:#9099b0; --accent:#ff8a1f; --accent2:#ffb347;
@@ -54,7 +60,9 @@ main{max-width:1200px;margin:0 auto;padding:14px 16px 110px}
 .pbar i{display:block;height:100%;background:var(--accent)}
 
 .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
-.tools input[type=search]{flex:1;min-width:160px}
+.tools input[type=search]{flex:1;min-width:0}
+#filtPanel select{flex:1;min-width:0}
+#btnFilt.on{background:var(--blue);border-color:var(--blue);color:#fff}
 .chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:none;border:1px solid var(--line);background:var(--bg2);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
@@ -163,6 +171,8 @@ main{max-width:1200px;margin:0 auto;padding:14px 16px 110px}
 .win:after{content:"";position:absolute;inset:0;border-radius:16px;pointer-events:none;
   background:linear-gradient(115deg,#ffffff1c 0%,transparent 35%,transparent 70%,#ffffff0c 100%)}
 .win svg{display:block;width:100%;height:auto}
+.win{cursor:pointer}.win.tap{animation:tap .18s}
+@keyframes tap{50%{transform:scale(.985)}}
 .win svg.ins{animation:insert .55s cubic-bezier(.2,.9,.25,1.15)}
 @keyframes insert{from{transform:translateY(-38%) scale(.94);opacity:0}60%{opacity:1}}
 @media(prefers-reduced-motion:reduce){.win svg.ins{animation:none}}
@@ -270,7 +280,10 @@ main{max-width:1200px;margin:0 auto;padding:14px 16px 110px}
 <main id="lib">
   <div id="resume"></div>
   <div class="tools">
-    <input type="search" id="q" placeholder="Chercher titre, auteur, narrateur…">
+    <input type="search" id="q" placeholder="Chercher titre, auteur, série…">
+    <button class="ib" id="btnFilt" aria-expanded="false" title="Trier et ranger">⇅ <span id="filtLbl">Tri</span></button>
+  </div>
+  <div class="tools hide" id="filtPanel">
     <select id="sort" title="Trier">
       <option value="last">Dernière écoute</option>
       <option value="title">Titre</option>
@@ -311,7 +324,7 @@ main{max-width:1200px;margin:0 auto;padding:14px 16px 110px}
       <button class="key" data-k="nextch" title="Chapitre suivant">⏭<small>CHAP</small></button>
     </div>
     <div class="brand"><b>K7·88</b><span>AUTO-STOP · <em>TYPE II</em> · STÉRÉO</span></div>
-    <div class="win"><svg id="cass" viewBox="0 0 400 252"></svg></div>
+    <div class="win" id="winCass" role="button" aria-label="Lecture / pause" title="Toucher la cassette : lecture / pause"><svg id="cass" viewBox="0 0 400 252"></svg></div>
     <div class="lcd">
       <div class="row"><span class="ch" id="lChap">—</span><span id="lChapT">0:00</span></div>
       <div class="seek" id="seek"><div class="tr"></div><div id="ticks"></div><div class="fl" id="seekFl"></div><div class="kn" id="seekKn"></div></div>
@@ -351,6 +364,7 @@ main{max-width:1200px;margin:0 auto;padding:14px 16px 110px}
 <input type="file" id="fFiles" multiple accept="audio/*,.m4b,.m4a,.mp3,.ogg,.opus,.flac,image/*" class="hide">
 <input type="file" id="fDir" webkitdirectory multiple class="hide">
 <input type="file" id="fCover" accept="image/*" class="hide">
+<input type="file" id="fBackup" accept="application/json,.json" class="hide">
 
 <script>
 "use strict";
@@ -688,6 +702,9 @@ function render(){
   const q = $("#q").value.trim().toLowerCase();
   const sort = S().sort || "last", group = S().group || "none";
   $("#sort").value = sort; $("#group").value = group;
+  { const sl = {last:"Récents",title:"Titre",author:"Auteur",added:"Ajouts",progress:"Avancement",duration:"Durée",year:"Année"}[sort];
+    const gl = {none:"",author:"auteur",shelf:"étagère",status:"statut",series:"série",genre:"genre",decade:"époque"}[group];
+    $("#filtLbl").textContent = sl + (gl ? " · " + gl : ""); $("#btnFilt").classList.toggle("on", sort !== "last" || group !== "none"); }
   // filtres statut
   const counts = {all: BOOKS.length, "en-cours":0, "a-lire":0, termine:0, abandon:0, fav:0};
   for (const b of BOOKS) { counts[bStatus(b)]++; if (bs(b.id).fav) counts.fav++; }
@@ -779,6 +796,8 @@ document.addEventListener("click", e => {
 });
 $("#q").oninput = render;
 $("#sort").onchange = e => { setSetting({sort: e.target.value}); render(); };
+$("#btnFilt").onclick = () => { const p = $("#filtPanel"), open = p.classList.toggle("hide") === false; $("#btnFilt").setAttribute("aria-expanded", open); try { localStorage.setItem("k7filt", open ? "1" : ""); } catch {} };
+try { if (localStorage.getItem("k7filt")) { $("#filtPanel").classList.remove("hide"); $("#btnFilt").setAttribute("aria-expanded", "true"); } } catch {}
 $("#group").onchange = e => { setSetting({group: e.target.value}); render(); };
 $("#goLib").onclick = showLib;
 $("#deckBack").onclick = showLib;
@@ -884,6 +903,7 @@ document.querySelectorAll(".key").forEach(el => {
   el.addEventListener("pointerup", () => keyUp(k, el));
   el.addEventListener("pointercancel", () => { el.classList.remove("down"); clearTimeout(holdT); if (cueT) { clearInterval(cueT); cueT = null; player.cue = 0; } });
 });
+$("#winCass").onclick = () => { if (!player.book) return; clunk(true); toggle(); const w = $("#winCass"); w.classList.remove("tap"); void w.offsetWidth; w.classList.add("tap"); };
 $("#miniPlay").onclick = e => { e.stopPropagation(); clunk(); toggle(); };
 $("#mini").onclick = showDeck;
 
@@ -1245,18 +1265,18 @@ async function searchCovers(title, author){
   await Promise.all(jobs);
   return out.sort((x, y) => y.score - x.score);
 }
-async function setCover(b, src){ // src = Blob (galerie) ou URL (web)
+async function setCover(b, src, chosen = false){ // src = Blob (galerie) ou URL (web)
   if (src instanceof Blob) {
     await IDB.put("covers", b.id, src); b.has_cover = true; b.cover_url = null;
     if (LocalBE.coverCache[b.id]) URL.revokeObjectURL(LocalBE.coverCache[b.id]); LocalBE.coverCache[b.id] = URL.createObjectURL(src);
   } else {
     let ok = false;
-    try { const r = await fetch(src); if (r.ok) { const bl = await r.blob(); if (bl.type.startsWith("image/") && bl.size > 2000) { await setCover(b, bl); ok = true; } } } catch {}
+    try { const r = await fetch(src); if (r.ok) { const bl = await r.blob(); if (bl.type.startsWith("image/") && bl.size > 2000) { await setCover(b, bl, chosen); ok = true; } } } catch {}
     if (!ok) { // site sans CORS : on garde l'adresse, le service worker la met en cache pour le hors-ligne
       await IDB.del("covers", b.id); b.has_cover = false; delete LocalBE.coverCache[b.id]; b.cover_url = src;
       try { const c = await caches.open("k7-covers"); const r = await fetch(src, {mode: "no-cors"}); await c.put(src, r); } catch {} }
   }
-  setBook(b.id, {coverTried: true});
+  setBook(b.id, {coverTried: true, ...(chosen ? {coverChosen: true} : {})});
   await LocalBE.saveMeta(b); render(); if (player.book?.id === b.id) { drawDeckStatic(); mediaMeta(); renderMini(); }
 }
 async function grabCover(b, urls){
@@ -1287,10 +1307,10 @@ function openCoverPicker(b, back){
     if (!$("#cpGrid")) return;
     g.innerHTML = res.length ? res.slice(0, 24).map((r, k) => `<button class="cp" data-k="${k}" title="${esc(r.label)}"><img src="${esc(r.url)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"><span>${esc(r.src)}</span></button>`).join("")
       : `<p class="note">Rien trouvé. Raccourcis le titre ou change l'auteur, puis 🔎 — ou prends une image dans ta galerie.</p>`;
-    g.querySelectorAll(".cp").forEach(x => x.onclick = async () => { x.classList.add("on"); await setCover(b, res[+x.dataset.k].url); toast("Pochette posée"); back ? back() : closeSheet(); });
+    g.querySelectorAll(".cp").forEach(x => x.onclick = async () => { x.classList.add("on"); await setCover(b, res[+x.dataset.k].url, true); toast("Pochette posée"); back ? back() : closeSheet(); });
   };
   $("#cpGo").onclick = run; $("#cpQ").onkeydown = $("#cpA").onkeydown = e => e.key === "Enter" && run();
-  $("#cpGal").onclick = () => { $("#fCover").onchange = async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; await setCover(b, f); toast("Pochette posée"); back ? back() : closeSheet(); }; $("#fCover").click(); };
+  $("#cpGal").onclick = () => { $("#fCover").onchange = async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; await setCover(b, f, true); toast("Pochette posée"); back ? back() : closeSheet(); }; $("#fCover").click(); };
   if ($("#cpNone")) $("#cpNone").onclick = async () => { await IDB.del("covers", b.id); b.has_cover = false; b.cover_url = null; delete LocalBE.coverCache[b.id]; await LocalBE.saveMeta(b); render(); if (player.book?.id === b.id) drawDeckStatic(); back ? back() : closeSheet(); };
   run();
 }
@@ -1298,6 +1318,19 @@ function openCoverPicker(b, back){
 /* ---------- résumés ---------- */
 const titleMatch = (x, q) => { const n = norm(cleanTitle(x) || x), t = norm(cleanTitle(q) || q); if (!n || !t) return false;
   return n === t || n.startsWith(t + " ") || t.startsWith(n + " ") || (t.length > 6 && n.includes(t)) || t.split(" ").filter(w => w.length > 3).every(w => n.includes(w)); };
+// retire les citations de presse en tête (« Retenez bien ce nom » Le Figaro…) pour garder l'histoire
+function stripPress(t){
+  let s = String(t || "").trim();
+  // « citation » + signature de journal (« Le Monde », « Le Figaro littéraire », « Télérama »…), répété en tête de texte
+  const attr = String.raw`(?:(?:L[ae]s?\s+|L['’]))?\p{Lu}[\p{L}'’.-]+(?:\s+(?:littéraire|magazine|Magazine|Livres|dimanche|\p{Lu}[\p{L}'’.-]+(?=\s*["«“„”»\n])))?`;
+  const re = new RegExp(String.raw`^["«“„]\s*([^"»”“]{3,260}?)\s*["»”“]\s*(?:[-–—,]\s*)?(` + attr + String.raw`)?\s*(?=["«“„]|\n|\p{Lu}|$)`, "u");
+  for (let k = 0; k < 5; k++) {
+    const m = s.match(re); if (!m) break;
+    const rest = s.slice(m[0].length).trim(); if (rest.length < 120) break;
+    s = rest;
+  }
+  return s;
+}
 const htmlText = h => { try { const d = new DOMParser().parseFromString(String(h || "").replace(/<br\s*\/?>|<\/p>/gi, "\n"), "text/html"); return (d.body.textContent || "").replace(/\n{3,}/g, "\n\n").trim(); } catch { return String(h || ""); } };
 async function fetchSummary(b, info){
   const t = cleanTitle(bTitle(b)) || bTitle(b), a = /inconnu/i.test(bAuthor(b)) ? "" : bAuthor(b);
@@ -1306,7 +1339,7 @@ async function fetchSummary(b, info){
     if (info.apple?.desc) break;
     try { const j = await jsonp(`https://itunes.apple.com/search?term=${encodeURIComponent((t + " " + a).trim())}&media=${media}&country=FR&limit=10`);
       const hit = (j.results || []).find(r => titleMatch(r.collectionName || r.trackName || "", t) && (!a || authorMatches(r.artistName || "", a)) && r.description);
-      if (hit) info.apple = {desc: htmlText(hit.description), url: hit.collectionViewUrl || hit.trackViewUrl || "", src: media === "audiobook" ? "Apple Livres (livre audio)" : "Apple Livres"}; } catch {}
+      if (hit) info.apple = {desc: stripPress(htmlText(hit.description)), url: hit.collectionViewUrl || hit.trackViewUrl || "", src: media === "audiobook" ? "Apple Livres (livre audio)" : "Apple Livres"}; } catch {}
   }
   // 2. Wikipédia FR : article du roman (« Glacé (roman) »)
   if (!info.wiki?.extract) {
@@ -1387,9 +1420,9 @@ function openDossier(b){
    <div class="btns" style="margin-top:0"><button class="ib acc" id="dPlay">▶ Écouter</button><button class="ib" id="dRef">↻ Actualiser</button></div>`;
   if (!i?.at) h += `<p class="note" style="margin-top:14px">${navigator.onLine ? "Recherche des infos…" : "Pas encore d'infos : elles se chargent toutes seules dès que le téléphone a du réseau."}</p>`;
   h += `<div style="height:8px"></div>`;
-  { const sm = bSummary(b); const srcName = ai.resume_sans_spoiler ? "" : i?.apple?.desc ? i.apple.src : i?.gbooks?.desc ? i.gbooks.src : i?.wiki?.extract ? "Wikipédia" : "";
+  { const sm = bSummary(b); const srcName = ai.resume_sans_spoiler ? "" : (i?.wiki?.extract && sm === i.wiki.extract) ? "Wikipédia" : i?.apple?.desc ? i.apple.src : i?.gbooks?.desc ? i.gbooks.src : "";
     h += sec("📜", "Résumé", sm ? para(sm) + (srcName ? `<p class="note">Source : ${esc(srcName)}</p>` : "") : ""); }
-  if (i?.apple?.desc && i?.wiki?.extract) h += sec("📚", "Wikipédia", para(i.wiki.extract), false);
+  if (i?.apple?.desc && i?.wiki?.extract) h += sec("📚", bSummary(b) === i.wiki.extract ? "Texte de l'éditeur" : "Wikipédia", para(bSummary(b) === i.wiki.extract ? stripPress(i.apple.desc) : i.wiki.extract), false);
   h += sec("🔒", "Résumé intégral — SPOILERS", para(ai.resume_complet_spoilers), false);
   if (ser) {
     const mem = wd?.series?.members?.length ? wd.series.members : (ai.serie?.ordre_lecture || []).map((m, k) => ({label: m.titre, year: m.annee, ord: String(k + 1)}));
@@ -1466,10 +1499,48 @@ function openAuthor(key, from){
   $("#aBack").onclick = () => openDossier(from);
 }
 
+/* ---------- sauvegarde / restauration ---------- */
+const blobToData = b => new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.onerror = () => r(null); f.readAsDataURL(b); });
+async function exportBackup(){
+  toast("Préparation de la sauvegarde…");
+  const covers = {};
+  for (const b of BOOKS) if (b.has_cover && bs(b.id).coverChosen) { const c = await IDB.get("covers", b.id); if (c && c.size < 1.5e6) covers[b.id] = await blobToData(c); }
+  const data = {app: "K7 Baladeur", v: 1, at: new Date().toISOString(), state: STATE,
+    books: BOOKS.map(({src, ...m}) => m), info: Info.map, covers};
+  const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = `k7-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  setSetting({lastBackup: Date.now()}); toast("Sauvegarde enregistrée dans Téléchargements");
+}
+async function importBackup(file){
+  let d; try { d = JSON.parse(await file.text()); } catch { toast("Fichier illisible"); return; }
+  if (d.app !== "K7 Baladeur" || !d.state) { toast("Ce n'est pas une sauvegarde K7"); return; }
+  const key = m => norm((m.rel || "") ) || norm(m.title + " " + m.author);
+  const key2 = m => norm(m.title + " " + m.author);
+  const mine = new Map(); for (const b of BOOKS) { mine.set("r:" + key(b), b); mine.set("t:" + key2(b), b); }
+  let n = 0, miss = 0;
+  for (const old of d.books || []) {
+    const b = mine.get("r:" + key(old)) || mine.get("t:" + key2(old)) || BOOKS.find(x => x.id === old.id);
+    if (!b) { miss++; continue; }
+    const st = d.state.books?.[old.id]; if (st) STATE.books[b.id] = {...(STATE.books[b.id] || {}), ...st};
+    if (old.series && !b.series) b.series = old.series; if (old.narrator && !b.narrator) b.narrator = old.narrator;
+    if (!b.has_cover && old.cover_url) b.cover_url = old.cover_url;
+    const inf = d.info?.["b:" + old.id]; if (inf) await Info.put("b:" + b.id, inf);
+    const cv = d.covers?.[old.id]; if (cv) { const bl = await (await fetch(cv)).blob(); await IDB.put("covers", b.id, bl); b.has_cover = true; LocalBE.coverCache[b.id] = URL.createObjectURL(bl); }
+    await LocalBE.saveMeta(b); n++;
+  }
+  for (const [k, v] of Object.entries(d.info || {})) if (k.startsWith("a:") && !Info.get(k)) await Info.put(k, v);
+  STATE.settings = {...d.state.settings, ...STATE.settings, lastBackup: STATE.settings.lastBackup};
+  LocalBE.persist(); render();
+  toast(`${n} livre${n > 1 ? "s" : ""} restauré${n > 1 ? "s" : ""}${miss ? ` · ${miss} pas trouvé${miss > 1 ? "s" : ""} (réimporte-les puis restaure à nouveau)` : ""}`, 6000);
+}
+
 /* ---------- appui long sur un boîtier : résumé ---------- */
 function bSummary(b){
   const i = bInfo(b); if (!i) return "";
-  return i.ai?.resume_sans_spoiler || i.apple?.desc || i.gbooks?.desc || i.wiki?.extract || i.wd?.desc || "";
+  const wikiBook = i.wiki?.extract && i.wiki.extract.length > 140 ? i.wiki.extract : "";
+  return i.ai?.resume_sans_spoiler || wikiBook || stripPress(i.apple?.desc || "") || stripPress(i.gbooks?.desc || "") || i.wiki?.extract || i.wd?.desc || "";
 }
 function openPeek(b){
   const cv = coverOf(b), ser = bSeries(b), yr = bYear(b), sum = bSummary(b);
@@ -1554,7 +1625,11 @@ async function openSettings(){
     storage = `<p class="note">Stockage utilisé : <b>${(e.usage/1e9).toFixed(2)} Go</b> sur ${(e.quota/1e9).toFixed(0)} Go dispo pour l'appli · ${p ? "✅ protégé (Android ne l'effacera pas)" : "⚠ non protégé : installe l'appli sur l'écran d'accueil"}</p>`; }
   const seg = (id, vals, cur, suf="") => `<div class="seg" id="${id}">${vals.map(v => `<button data-v="${v}" class="${v==cur?"on":""}">${v}${suf}</button>`).join("")}</div>`;
   openSheet(`<h3>⚙ Réglages <button class="x" data-close>×</button></h3>
-   ${storage}<div class="btns" style="margin:0 0 14px"><button class="ib acc" data-act="addfiles">＋ Fichiers</button><button class="ib" data-act="adddir">＋ Dossier(s)</button></div>
+   ${storage}
+   <h3 style="font-size:15px">💾 Sauvegarde</h3>
+   <p class="note" style="margin-top:-6px">Progression, signets, fiches corrigées, résumés et pochettes choisies — pas les fichiers audio. ${s.lastBackup ? "Dernière : " + new Date(s.lastBackup).toLocaleDateString("fr-FR") : "<b>Jamais faite.</b>"}</p>
+   <div class="btns" style="margin:0 0 14px"><button class="ib acc" id="bkExp">💾 Sauvegarder</button><button class="ib" id="bkImp">♻ Restaurer</button></div>
+   <div class="btns" style="margin:0 0 14px"><button class="ib acc" data-act="addfiles">＋ Fichiers</button><button class="ib" data-act="adddir">＋ Dossier(s)</button></div>
    <div class="btns" style="margin:0 0 14px"><button class="ib" id="fillAll">ⓘ Récupérer les infos de tous les livres</button></div>
    <p class="note" style="margin-top:-6px">Résumé, série, année, genres, adaptations, auteur — depuis Wikipédia, Wikidata et Open Library. Ça se fait aussi tout seul après chaque import.</p>
    <h3 style="font-size:15px">▶ Lecture</h3>
@@ -1566,6 +1641,8 @@ async function openSettings(){
    <p class="note">Maintenir ◀◀ ou ▶▶ = rembobinage/avance rapide continue. Double-tap sur VITESSE = ×1. Les touches du casque et de l'écran verrouillé marchent (◀◀/▶▶ = chapitres).</p>`);
   const bindSeg = (id, key) => $("#"+id).onclick = e => { const v = e.target.dataset.v; if (v == null) return; setSetting({[key]: +v}); [...$("#"+id).children].forEach(x => x.classList.toggle("on", x.dataset.v === v)); if (player.book) drawDeckStatic(); };
   bindSeg("stBack","back"); bindSeg("stFwd","fwd"); bindSeg("stRw","rewind");
+  $("#bkExp").onclick = exportBackup;
+  $("#bkImp").onclick = () => { $("#fBackup").onchange = e => { const f = e.target.files[0]; e.target.value = ""; if (f) { closeSheet(); importBackup(f); } }; $("#fBackup").click(); };
   $("#stClick").onchange = e => setSetting({clicks: e.target.checked});
   $("#stHiss").onchange = e => { setSetting({hiss: e.target.checked}); hiss(!A.paused); };
   $("#fillAll").onclick = () => { closeSheet(); fillAll(); };
@@ -1589,6 +1666,8 @@ async function openSettings(){
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
   A.volume = S().vol ?? 1;
   render(); setTimeout(() => fillAll(true), 4000);
+  if (BOOKS.length && Date.now() - (S().lastBackup || 0) > 14 * 864e5 && Date.now() - (S().backupNag || 0) > 3 * 864e5) {
+    setSetting({backupNag: Date.now()}); setTimeout(() => toast(S().lastBackup ? "💾 Pense à refaire une sauvegarde (⚙ → Sauvegarder)" : "💾 Aucune sauvegarde : ⚙ → Sauvegarder, ça prend 2 secondes", 6000), 2500); }
   const last = BOOKS.filter(b => bs(b.id).last).sort((a,b) => bs(b.id).last - bs(a.id).last)[0];
   if (last) { player.book = last; const p = bs(last.id).pos || {file:0,t:0}; loadFile(Math.min(p.file, last.files.length-1), p.t||0, false).then(() => { mediaMeta(); renderMini(); }); }
 })();
