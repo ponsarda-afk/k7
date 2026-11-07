@@ -82,6 +82,13 @@ main{max-width:1200px;margin:0 auto;padding:14px 16px 110px}
 .jc .art.blank .mini-k7:before,.jc .art.blank .mini-k7:after{content:"";position:absolute;top:28%;width:22%;aspect-ratio:1;border-radius:50%;
   background:radial-gradient(circle,#0000 34%,#00000040 36% 58%,#0000 60%)}
 .jc .art.blank .mini-k7:before{left:16%}.jc .art.blank .mini-k7:after{right:16%}
+.jc .art.blank .addcv{position:absolute;left:50%;bottom:calc(8% + 13%);transform:translate(-50%,50%);white-space:nowrap;
+  font:700 12px/1 var(--ui);padding:7px 10px;border-radius:999px;background:#000b;color:#fff;border:1px solid #ffffff55}
+.cpgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.cp{position:relative;padding:0;border:2px solid transparent;border-radius:8px;overflow:hidden;background:#000;aspect-ratio:2/3}
+.cp img{width:100%;height:100%;object-fit:cover;display:block}
+.cp span{position:absolute;left:0;right:0;bottom:0;font-size:10px;padding:3px 5px;background:#000a;color:#fff;text-align:left}
+.cp.on,.cp:focus-visible{border-color:var(--accent)}
 .jc .lab{padding:7px 9px 8px;background:var(--lab);color:var(--labink);border-top:3px solid #0003}
 .jc .lab b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font:700 14px/1.18 var(--ui);letter-spacing:-.005em}
 .jc .lab span{display:block;font:500 11.5px/1.3 var(--ui);opacity:.78;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
@@ -371,7 +378,7 @@ const LocalBE = {
   async audioSrc(b, i){ const f = await IDB.get("files", `${b.id}/${i}`); if (!f) throw new Error("Fichier absent");
     if (this.urls.audio) URL.revokeObjectURL(this.urls.audio); return this.urls.audio = URL.createObjectURL(f); },
   coverCache: {},
-  coverSrc(b){ return b.has_cover ? (this.coverCache[b.id] || null) : null; },
+  coverSrc(b){ return (b.has_cover && this.coverCache[b.id]) || b.cover_url || null; },
   async warmCovers(){ for (const b of BOOKS) if (b.has_cover && !this.coverCache[b.id]) {
       const c = await IDB.get("covers", b.id); if (c) this.coverCache[b.id] = URL.createObjectURL(c); } },
   saveBook(){ this.persist(); },
@@ -712,7 +719,7 @@ function tileHTML(b){
       <div class="spine"></div>
       <div class="jc">
         ${cv ? `<div class="art"><img src="${esc(cv)}" alt="" loading="lazy" decoding="async"></div>`
-             : `<div class="art blank"><div class="big">${esc(bTitle(b))}</div><div class="mini-k7"></div></div>`}
+             : `<div class="art blank"><div class="big">${esc(bTitle(b))}</div><div class="mini-k7"></div><span class="addcv" data-cover="${b.id}" role="button">🖼 Pochette</span></div>`}
         <div class="stripes"></div>
         <div class="lab"><b>${esc(bTitle(b))}</b><span>${esc(bAuthor(b))}</span></div>
       </div>
@@ -729,6 +736,7 @@ function emptyHTML(){
     <button class="ib acc" data-act="addfiles">＋ Fichiers d'un livre</button><button class="ib" data-act="adddir">＋ Dossier(s)</button></div>`;
 }
 document.addEventListener("click", e => {
+  const cvb = e.target.closest("[data-cover]"); if (cvb) { e.stopPropagation(); openCoverPicker(BOOKS.find(x => x.id === cvb.dataset.cover)); return; }
   const t = e.target.closest("[data-dos],[data-open],[data-st],[data-sh],[data-resume],[data-act]"); if (!t) return;
   if (t.dataset.dos) { e.stopPropagation(); openDossier(BOOKS.find(x => x.id === t.dataset.dos)); }
   else if (t.dataset.open) { const b = BOOKS.find(x => x.id === t.dataset.open); if (player.book?.id === b.id) showDeck(); else openBook(b, false); }
@@ -1175,12 +1183,86 @@ async function openLib(title, author){
     places: (d.subject_places||[]).slice(0, 12), times: (d.subject_times||[]).slice(0, 8), cover: d.cover_i || null, editions: d.edition_count || 0,
     pages: d.number_of_pages_median || null, langs: (d.language||[]).length};
 }
+/* ---------- pochettes : recherche + pose ---------- */
+function jsonp(url, ms = 12000){
+  return new Promise((res, rej) => { const cb = "k7cb" + Math.random().toString(36).slice(2); const sc = document.createElement("script");
+    const done = v => { delete window[cb]; sc.remove(); clearTimeout(t); v instanceof Error ? rej(v) : res(v); };
+    const t = setTimeout(() => done(new Error("délai dépassé")), ms);
+    window[cb] = done; sc.onerror = () => done(new Error("réseau")); sc.src = url + (url.includes("?") ? "&" : "?") + "callback=" + cb; document.head.appendChild(sc); });
+}
+async function searchCovers(title, author){
+  const t = cleanTitle(title) || title, a = /inconnu/i.test(author) ? "" : author;
+  const out = [], seen = new Set();
+  const add = (url, src, label, score) => { if (!url || seen.has(url)) return; seen.add(url); out.push({url, src, label, score}); };
+  const match = (x, wanted) => !wanted || authorMatches(x || "", wanted);
+  const titleOk = x => { const n = norm(x), q = norm(t); return n && q && (n.includes(q) || q.includes(n) || q.split(" ").filter(w => w.length > 3).every(w => n.includes(w))); };
+  const jobs = [
+    // iTunes / Apple Books : pochettes de livres audio, carrées, 600 px
+    ...["audiobook", "ebook"].map(media => jsonp(`https://itunes.apple.com/search?term=${encodeURIComponent((t + " " + a).trim())}&media=${media}&country=FR&limit=12`).then(j =>
+      (j.results || []).forEach(r => { const art = (r.artworkUrl100 || r.artworkUrl60 || "").replace(/\/\d+x\d+(bb)?\.(jpg|png)$/, "/600x600bb.jpg");
+        add(art, media === "audiobook" ? "Livre audio" : "Livre", `${r.collectionName || r.trackName || ""} — ${r.artistName || ""}`,
+          (titleOk(r.collectionName || r.trackName) ? 50 : 0) + (match(r.artistName, a) ? 30 : 0) + (media === "audiobook" ? 10 : 0)); })).catch(() => {})),
+    // Google Livres : éditions papier françaises
+    getJSON(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(`intitle:${t}` + (a ? ` inauthor:${a}` : ""))}&maxResults=12&printType=books`).then(j =>
+      (j.items || []).forEach(it => { const v = it.volumeInfo || {}; const im = v.imageLinks?.extraLarge || v.imageLinks?.large || v.imageLinks?.thumbnail;
+        if (im) add(im.replace(/^http:/, "https:").replace("&edge=curl", "") + (im.includes("fife=") ? "" : "&fife=w800"), "Livre", `${v.title || ""} — ${(v.authors||[]).join(", ")}`,
+          (titleOk(v.title) ? 45 : 0) + (match((v.authors||[]).join(" "), a) ? 30 : 0)); })).catch(() => {}),
+    // Open Library
+    getJSON(`https://openlibrary.org/search.json?title=${encodeURIComponent(t)}${a ? "&author=" + encodeURIComponent(a) : ""}&limit=8&fields=title,author_name,cover_i`).then(j =>
+      (j.docs || []).forEach(d => d.cover_i && add(`https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg`, "Open Library", `${d.title || ""} — ${(d.author_name||[]).join(", ")}`,
+        (titleOk(d.title) ? 40 : 0) + (match((d.author_name||[]).join(" "), a) ? 30 : 0)))).catch(() => {}),
+  ];
+  await Promise.all(jobs);
+  return out.sort((x, y) => y.score - x.score);
+}
+async function setCover(b, src){ // src = Blob (galerie) ou URL (web)
+  if (src instanceof Blob) {
+    await IDB.put("covers", b.id, src); b.has_cover = true; b.cover_url = null;
+    if (LocalBE.coverCache[b.id]) URL.revokeObjectURL(LocalBE.coverCache[b.id]); LocalBE.coverCache[b.id] = URL.createObjectURL(src);
+  } else {
+    let ok = false;
+    try { const r = await fetch(src); if (r.ok) { const bl = await r.blob(); if (bl.type.startsWith("image/") && bl.size > 2000) { await setCover(b, bl); ok = true; } } } catch {}
+    if (!ok) { // site sans CORS : on garde l'adresse, le service worker la met en cache pour le hors-ligne
+      await IDB.del("covers", b.id); b.has_cover = false; delete LocalBE.coverCache[b.id]; b.cover_url = src;
+      try { const c = await caches.open("k7-covers"); const r = await fetch(src, {mode: "no-cors"}); await c.put(src, r); } catch {} }
+  }
+  setBook(b.id, {coverTried: true});
+  await LocalBE.saveMeta(b); render(); if (player.book?.id === b.id) { drawDeckStatic(); mediaMeta(); renderMini(); }
+}
 async function grabCover(b, urls){
   for (const u of urls.filter(Boolean)) {
     try { const r = await fetch(u); if (!r.ok) continue; const bl = await r.blob(); if (!bl.type.startsWith("image/") || bl.size < 2000) continue;
-      await IDB.put("covers", b.id, bl); b.has_cover = true; await LocalBE.saveMeta(b); LocalBE.coverCache[b.id] = URL.createObjectURL(bl); return true; } catch {}
+      await setCover(b, bl); return true; } catch {}
   }
   return false;
+}
+async function autoCover(b){
+  if (b.has_cover || b.cover_url || bs(b.id).coverTried) return false;
+  try { const c = await searchCovers(bTitle(b), bAuthor(b)); const best = c.find(x => x.score >= 70);
+    if (best) { await setCover(b, best.url); return true; } } catch {}
+  setBook(b.id, {coverTried: true}); return false;
+}
+function openCoverPicker(b, back){
+  const q0 = `${cleanTitle(bTitle(b)) || bTitle(b)}`;
+  openSheet(`<h3>🖼 Pochette <button class="x" data-close>×</button></h3>
+    <div class="btns" style="margin:0 0 10px"><button class="ib acc" id="cpGal">📷 Depuis ma galerie</button>
+      ${(b.has_cover || b.cover_url) ? `<button class="ib danger" id="cpNone">Retirer la pochette</button>` : ""}</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px"><input id="cpQ" style="flex:1;min-width:0" value="${esc(q0)}"><input id="cpA" style="flex:1;min-width:0" value="${esc(/inconnu/i.test(bAuthor(b)) ? "" : bAuthor(b))}" placeholder="Auteur"><button class="ib" id="cpGo">🔎</button></div>
+    <div id="cpGrid" class="cpgrid"><p class="note">Recherche…</p></div>
+    <p class="note">Touche une image pour la poser sur la cassette. Sources : Apple Livres, Google Livres, Open Library.</p>`);
+  const run = async () => {
+    const g = $("#cpGrid"); g.innerHTML = `<p class="note">Recherche…</p>`;
+    if (!navigator.onLine) { g.innerHTML = `<p class="note">Pas de réseau : prends une image dans ta galerie.</p>`; return; }
+    const res = await searchCovers($("#cpQ").value.trim() || bTitle(b), $("#cpA").value.trim());
+    if (!$("#cpGrid")) return;
+    g.innerHTML = res.length ? res.slice(0, 24).map((r, k) => `<button class="cp" data-k="${k}" title="${esc(r.label)}"><img src="${esc(r.url)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"><span>${esc(r.src)}</span></button>`).join("")
+      : `<p class="note">Rien trouvé. Raccourcis le titre ou change l'auteur, puis 🔎 — ou prends une image dans ta galerie.</p>`;
+    g.querySelectorAll(".cp").forEach(x => x.onclick = async () => { x.classList.add("on"); await setCover(b, res[+x.dataset.k].url); toast("Pochette posée"); back ? back() : closeSheet(); });
+  };
+  $("#cpGo").onclick = run; $("#cpQ").onkeydown = $("#cpA").onkeydown = e => e.key === "Enter" && run();
+  $("#cpGal").onclick = () => { $("#fCover").onchange = async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; await setCover(b, f); toast("Pochette posée"); back ? back() : closeSheet(); }; $("#fCover").click(); };
+  if ($("#cpNone")) $("#cpNone").onclick = async () => { await IDB.del("covers", b.id); b.has_cover = false; b.cover_url = null; delete LocalBE.coverCache[b.id]; await LocalBE.saveMeta(b); render(); if (player.book?.id === b.id) drawDeckStatic(); back ? back() : closeSheet(); };
+  run();
 }
 
 /* ---------- pipeline ---------- */
@@ -1199,7 +1281,7 @@ async function enrich(b, {force = false, log = () => {}} = {}){
       if (force || !ex) { try { log("Auteur"); const a = await authorDetails(info.authorQ); a.wikiIntro = await wikiIntro(a.wiki.fr || a.wiki.en).catch(() => null); a.at = Date.now(); await Info.put(k, a); }
         catch(e) { info.errors.push("Auteur : " + e.message); } }
       info.authorKey = k; }
-    if (!b.has_cover) { log("Pochette"); await grabCover(b, [info.ol?.cover && `https://covers.openlibrary.org/b/id/${info.ol.cover}-L.jpg`, info.wiki?.image]); }
+    if (!b.has_cover && !b.cover_url) { log("Pochette"); if (!await autoCover(b)) await grabCover(b, [info.ol?.cover && `https://covers.openlibrary.org/b/id/${info.ol.cover}-L.jpg`, info.wiki?.image]); }
     info.at = Date.now();
   }
   await Info.put("b:" + b.id, info);
@@ -1209,7 +1291,7 @@ async function enrich(b, {force = false, log = () => {}} = {}){
 let FILL = null;
 async function fillAll(silent){
   if (FILL || !navigator.onLine) return;
-  const todo = BOOKS.filter(b => !bInfo(b)?.at);
+  const todo = BOOKS.filter(b => !bInfo(b)?.at || (!b.has_cover && !b.cover_url && !bs(b.id).coverTried));
   if (!todo.length) { if (!silent) toast("Toutes les fiches sont déjà à jour ✓"); return; }
   FILL = {stop: false}; let n = 0;
   if (!silent) { openSheet(`<h3>ⓘ Récupérer les infos <button class="x" id="fillStop">Stop</button></h3>
@@ -1217,7 +1299,7 @@ async function fillAll(silent){
     $("#fillStop").onclick = () => { FILL.stop = true; }; }
   for (const b of todo) {
     if (FILL.stop || !navigator.onLine) break;
-    try { await enrich(b, {log: x => { const m = $("#fillMsg"); if (m) m.textContent = `${n+1}/${todo.length} · ${bTitle(b)} — ${x}`; }}); } catch {}
+    try { if (bInfo(b)?.at) { await autoCover(b); n++; continue; } await enrich(b, {log: x => { const m = $("#fillMsg"); if (m) m.textContent = `${n+1}/${todo.length} · ${bTitle(b)} — ${x}`; }}); } catch {}
     n++; const bar = $("#fillBar"); if (bar) bar.style.width = (n / todo.length * 100) + "%";
     await new Promise(r => setTimeout(r, 500));
   }
@@ -1356,9 +1438,7 @@ function openBookSheet(b, fresh){
   $("#bkC").onclick = e => { const c = e.target.dataset.c; if (!c) return; color = c; [...$("#bkC").children].forEach(x => x.classList.toggle("on", x.dataset.c === c)); if (!cv) $("#bkCv").style.background = c; };
   document.querySelectorAll("[data-addsh]").forEach(x => x.onclick = () => { const cur = $("#bkSh").value.split(",").map(s=>s.trim()).filter(Boolean);
     if (!cur.includes(x.dataset.addsh)) cur.push(x.dataset.addsh); $("#bkSh").value = cur.join(", "); });
-  if ($("#bkCvBtn")) $("#bkCvBtn").onclick = () => { $("#fCover").onchange = async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return;
-      await IDB.put("covers", b.id, f); b.has_cover = true; await LocalBE.saveMeta(b); LocalBE.coverCache[b.id] = URL.createObjectURL(f);
-      $("#bkCv").style.cssText = `background-image:url('${LocalBE.coverCache[b.id]}')`; }; $("#fCover").click(); };
+  if ($("#bkCvBtn")) $("#bkCvBtn").onclick = () => openCoverPicker(b, () => openBookSheet(b));
   $("#bkOk").onclick = () => {
     const t = $("#bkT").value.trim(), a = $("#bkA").value.trim(), n = $("#bkN").value.trim();
     setBook(b.id, { title: t && t !== b.title ? t : null, author: a && a !== b.author ? a : null, narrator: n !== (b.narrator||"") ? n : null,
