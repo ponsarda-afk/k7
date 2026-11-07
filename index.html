@@ -76,7 +76,7 @@ main{max-width:1200px;margin:0 auto;padding:14px 16px 110px}
    radial-gradient(120% 70% at 50% 120%,#0000002a,transparent 60%),
    repeating-linear-gradient(0deg,#ffffff10 0 1px,transparent 1px 4px),var(--lab)}
 .jc .art.blank .big{position:absolute;inset:10% 9% auto;font:800 clamp(17px,5.2vw,24px)/1.05 var(--ui);letter-spacing:-.01em;
-  text-wrap:balance;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;hyphens:auto}
+  text-wrap:balance;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;hyphens:manual;overflow-wrap:break-word}
 .jc .art.blank .mini-k7{position:absolute;left:9%;right:9%;bottom:8%;height:26%;border-radius:6px;background:#00000022;
   box-shadow:inset 0 0 0 2px #0000001f}
 .jc .art.blank .mini-k7:before,.jc .art.blank .mini-k7:after{content:"";position:absolute;top:28%;width:22%;aspect-ratio:1;border-radius:50%;
@@ -135,6 +135,9 @@ main{max-width:1200px;margin:0 auto;padding:14px 16px 110px}
 .win:after{content:"";position:absolute;inset:0;border-radius:16px;pointer-events:none;
   background:linear-gradient(115deg,#ffffff1c 0%,transparent 35%,transparent 70%,#ffffff0c 100%)}
 .win svg{display:block;width:100%;height:auto}
+.win svg.ins{animation:insert .55s cubic-bezier(.2,.9,.25,1.15)}
+@keyframes insert{from{transform:translateY(-38%) scale(.94);opacity:0}60%{opacity:1}}
+@media(prefers-reduced-motion:reduce){.win svg.ins{animation:none}}
 .lcd{margin:14px 2px 0;border-radius:10px;padding:8px 12px;background:linear-gradient(#b8cfb4,var(--lcd));color:var(--lcdink);
   box-shadow:inset 0 2px 6px #0005,0 1px 0 #fff8;font-family:var(--lcdf);font-size:21px;line-height:1.05}
 .lcd .row{display:flex;justify-content:space-between;gap:8px;white-space:nowrap}
@@ -479,17 +482,29 @@ function mediaDuration(blob){
     a.onloadedmetadata = () => { if (isFinite(a.duration)) fin(a.duration); else { a.currentTime = 1e9; a.ondurationchange = () => isFinite(a.duration) && fin(a.duration); } };
     a.onerror = () => fin(0); setTimeout(() => fin(a.duration), 20000); a.src = u; });
 }
+// "Karine.Giebel.01.Terminus_Elicius" → "Karine Giebel 01 Terminus Elicius"
+const despace = t => (/\s/.test(String(t || "").trim()) && !/_/.test(t)) ? String(t || "").trim() : String(t || "").replace(/(\p{L})[._]+(?=[\p{L}\d])|(\d)[._]+(?=\p{L})/gu, "$1$2 ").replace(/_/g, " ").replace(/\s{2,}/g, " ").trim();
 function splitAT(raw, tags, fromFolder = true, parent = ""){
-  let name = String(raw).replace(/\[[^\]]*\]/g, "").replace(/\{[^}]*\}/g, "").replace(/\s{2,}/g, " ").trim();
+  let name = despace(String(raw).replace(/\[[^\]]*\]/g, "").replace(/\{[^}]*\}/g, "")).replace(/\s{2,}/g, " ").trim();
+  tags = {...tags}; for (const k of ["album","artist","album_artist","composer"]) if (tags[k]) tags[k] = despace(tags[k]);
   let series = null; const sm = name.match(/\(([^()]*?)\s*(?:tome|t\.|vol\.?|n°|#|-)?\s*(\d+(?:[.,]\d)?)\)\s*$/i);
   if (sm && sm[1].trim()) { series = {label: sm[1].trim(), ord: sm[2].replace(",", ".")}; name = name.slice(0, sm.index).trim(); }
   else name = name.replace(/\((?:livre audio|audio|int[ée]gral|lu par[^)]*)\)/gi, "").trim();
   let author = "", title = name; const m = fromFolder && name.match(/^(.+?)\s+[-–—]\s+(.+)$/);
-  if (m) { author = m[1].trim(); title = m[2].trim(); }
+  if (m) { author = m[1].trim(); title = m[2].trim();
+    const sn = author.match(/^(.+?)\s+(?:t(?:ome)?\.?\s*)?(\d{1,3})$/i), known = (parent && !SKIP_DIR.test(parent) && parent) || tags.album_artist || tags.artist;
+    if (sn && known) { series ||= {label: sn[1], ord: sn[2]}; author = despace(known); }
+  }
+  else if (fromFolder) { // "Prénom Nom 01 Titre" → auteur + tome + titre
+    const k = name.match(/^(\p{Lu}[\p{L}'’-]+(?: \p{Lu}[\p{L}'’-]+){1,2}) (\d{1,3}) (.{2,})$/u);
+    if (k) { author = k[1]; title = k[3]; }
+  }
   if (!author && parent && !SKIP_DIR.test(parent)) author = parent.replace(/\[[^\]]*\]/g, "").trim();
   if (!fromFolder && tags.album) title = tags.album;
   author ||= tags.album_artist || tags.artist || tags.composer || "";
-  return {author: author || "Auteur inconnu", title: title || tags.album || raw, series};
+  title = title.replace(/^\d{1,3}\s*[-–.]?\s+(?=\p{L})/u, "");
+  const reader = tags.artist && author && norm(tags.artist) !== norm(author) ? tags.artist : "";
+  return {author: author || "Auteur inconnu", title: title || tags.album || raw, series, reader};
 }
 /* ================================================================
    Import (mode autonome)
@@ -503,7 +518,7 @@ async function importGroups(groups){
     const tags = await readTags(audio[0]);
     // nom de dossier (ou fichier unique) = fiable pour « Auteur - Titre » ; plusieurs fichiers en vrac = on se fie aux tags
     const single = audio.length === 1;
-    const {author, title, series} = splitAT(g.name || (single ? audio[0].name.replace(/\.[^.]+$/,"") : (tags.album || "Nouveau livre")), tags, !!g.name || single, g.parent || "");
+    const {author, title, series, reader} = splitAT(g.name || (single ? audio[0].name.replace(/\.[^.]+$/,"") : (tags.album || "Nouveau livre")), tags, !!g.name || single, g.parent || "");
     const id = "L" + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
     const durations = [], chapters = [];
     for (let i=0;i<audio.length;i++) {
@@ -520,7 +535,7 @@ async function importGroups(groups){
     }
     let cover = g.images?.sort((a,b)=>{ const r = n => /cover|folder|front|pochette|couv/i.test(n.name) ? 0 : 1; return r(a)-r(b); })[0] || tags.pic || null;
     if (cover) await IDB.put("covers", id, cover);
-    const meta = {id, title, author, narrator: tags.composer || "", genre: tags.genre || "", year: (tags.year||"").slice(0,4),
+    const meta = {id, title, author, narrator: reader || tags.composer || "", genre: tags.genre || "", year: (tags.year||"").slice(0,4),
       files: audio.map(f=>f.name), durations, duration: durations.reduce((a,x)=>a+x,0), chapters, has_cover: !!cover, mtime: Date.now()/1000, rel: g.path || g.name || title, series};
     await IDB.put("books", id, meta); BOOKS.push({...meta, src:"local"}); made.push(meta);
   }
@@ -612,8 +627,8 @@ function cassetteSVG(o){
   ${[0,1,2].map(i=>`<rect x="22" y="${92+i*5}" width="356" height="2.5" fill="${["#e94f37","#f6ae2d","#33a1fd"][i]}" opacity=".85"/>`).join("")}
   <text x="34" y="${cover ? 48 : 58}" font-family="Archivo,sans-serif" font-weight="800" font-size="20" fill="${ink}">${side}</text>
   ${cover ? `<image href="${esc(cover)}" x="30" y="24" width="58" height="58" preserveAspectRatio="xMidYMid slice" clip-path="url(#cc${uid})"/><text x="34" y="44" font-family="Archivo" font-weight="800" font-size="16" fill="#fff" stroke="#000" stroke-width=".6" paint-order="stroke">${side}</text>` : ""}
-  <text x="${cover ? 98 : 62}" y="${big ? 52 : 54}" font-family="Archivo,sans-serif" font-weight="800" font-size="${big ? 21 : 26}" fill="${ink}">${t}</text>
-  <text x="${cover ? 98 : 62}" y="78" font-family="Archivo,sans-serif" font-weight="600" font-size="15" fill="${ink}" opacity=".8">${a}</text>
+  <text x="${cover ? 98 : 62}" y="${big ? 52 : 54}" font-family="Permanent Marker,cursive" font-size="${big ? 22 : 26}" fill="${ink}">${t}</text>
+  <text x="${cover ? 98 : 62}" y="78" font-family="Permanent Marker,cursive" font-size="15" fill="${ink}" opacity=".78">${a}</text>
   <rect x="88" y="98" width="224" height="82" rx="14" fill="#11131a"/>
   <g clip-path="url(#cw${uid})">
     <rect x="96" y="104" width="208" height="70" fill="#20232c"/>
@@ -851,6 +866,7 @@ function drawTicks(){ const b = player.book; const d = bDur(b); if (!d) { $("#ti
 function drawDeckStatic(){
   const b = player.book;
   $("#dTitle").textContent = bTitle(b); $("#dAuthor").textContent = bAuthor(b) + (bNarr(b) ? " · lu par " + bNarr(b) : "");
+  const cs = $("#cass"); if (player.drawn !== b.id) { player.drawn = b.id; cs.classList.remove("ins"); void cs.getBoundingClientRect(); cs.classList.add("ins"); if (S().clicks !== false && AC) clunk(true); }
   $("#cass").innerHTML = cassetteSVG({title: bTitle(b), author: bAuthor(b), color: bColor(b), p: bProg(b), cover: coverOf(b), big: true, side: bs(b.id).fav ? "★" : "A"});
   $("#spd").value = S().speed || 1; $("#vol").value = S().vol ?? 1; A.volume = S().vol ?? 1; $("#volV").textContent = Math.round(A.volume*10);
   $("#lblRew").textContent = "-" + (S().back || 15); $("#lblFf").textContent = "+" + (S().fwd || 30);
@@ -1387,6 +1403,14 @@ async function openSettings(){
   BE = LocalBE;
   try { await BE.load(); } catch(e) { toast("Erreur de chargement : " + e.message, 6000); }
   await LocalBE.warmCovers(); await Info.loadAll();
+  for (const b of BOOKS) { // noms à points/tirets bas importés avant la correction
+    if (!/\p{L}[._]\p{L}|_| [-–—] /u.test(b.title + " " + b.author) || /\.\s|\b\p{L}\.\p{L}\./u.test(b.author)) continue;
+    const raw = String(b.rel || b.title).split("/").pop(), parent = String(b.rel || "").split("/").slice(-2, -1)[0] || "";
+    const r = splitAT(raw, {artist: b.author}, true, parent);
+    b.title = r.title; b.author = r.author; if (r.series && !b.series) b.series = r.series; if (r.reader && !b.narrator) b.narrator = r.reader;
+    if (Info.get("b:" + b.id) && !Info.get("b:" + b.id).wd) Info.del("b:" + b.id);
+    LocalBE.saveMeta(b);
+  }
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
   A.volume = S().vol ?? 1;
   render(); setTimeout(() => fillAll(true), 4000);
