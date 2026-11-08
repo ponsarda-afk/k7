@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#14161f">
-<title>K7 Baladeur</title>
+<title>K7 Audiobook</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -37,12 +37,14 @@ input:focus,select:focus{border-color:var(--blue)}
 .hide{display:none!important}
 
 /* ---------- barre du haut ---------- */
-.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));
-  background:rgba(20,22,31,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-.logo{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:.06em}
-.logo svg{width:46px;height:32px}
-.logo small{display:block;font-weight:400;color:var(--muted);font-size:11px;letter-spacing:.12em}
-.top .sp{flex:1}
+.top{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:46px 1fr 46px;align-items:center;gap:8px;padding:6px 16px;padding-top:max(6px,env(safe-area-inset-top));
+  background:rgba(20,22,31,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.logo{display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;justify-self:center}
+.logo svg{width:70px;height:51px;flex:none}
+.wordmark{display:flex;flex-direction:column;line-height:1}
+.wordmark b{font-weight:800;font-size:27px;letter-spacing:.02em;color:var(--accent)}
+.wordmark small{font-weight:600;font-size:10.5px;letter-spacing:.32em;color:var(--muted);margin-top:4px}
+.gear{width:46px;height:46px;justify-content:center;font-size:19px;padding:0}
 .ib{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 11px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .ib:active{transform:translateY(1px)}
 .ib.acc{background:var(--accent);border-color:var(--accent);color:#1a1006;font-weight:700}
@@ -321,33 +323,18 @@ body.flat .case{transform:none!important}body.flat .edge{display:none}body.flat 
 <body>
 
 <header class="top">
-  <div class="logo" id="goLib" role="button">
-    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 44"><rect x="1" y="17" width="62" height="26" rx="4" fill="#ff8a1f"/><rect x="7" y="21" width="34" height="11" rx="2" fill="#f2e8cf"/><circle cx="15" cy="27" r="3.4" fill="#14161f"/><circle cx="33" cy="27" r="3.4" fill="#14161f"/><path d="M8 43l3-6h26l3 6" fill="#14161f" opacity=".45"/><g transform="translate(24 -4) scale(.42)">
-    <!-- tête : museau carré typique -->
-    <path d="M30 40 C30 22 44 14 60 14 C78 14 92 22 92 38 L92 56 C92 66 84 72 72 72 L48 72 C36 72 30 64 30 54 Z" fill="#c4763a"/>
-    <!-- oreilles -->
-    <ellipse cx="38" cy="18" rx="6" ry="5" fill="#8f4f22"/>
-    <ellipse cx="82" cy="18" rx="6" ry="5" fill="#8f4f22"/>
-    <!-- museau -->
-    <path d="M40 52 C40 46 48 44 60 44 C72 44 80 46 80 52 L80 58 C80 66 72 70 60 70 C48 70 40 66 40 58 Z" fill="#a85e29"/>
-    <ellipse cx="53" cy="52" rx="2.6" ry="1.8" fill="#3a1d0b"/>
-    <ellipse cx="67" cy="52" rx="2.6" ry="1.8" fill="#3a1d0b"/>
-    <!-- bouche blasée -->
-    <path d="M52 62 Q60 60.5 68 62" stroke="#3a1d0b" stroke-width="2" fill="none" stroke-linecap="round"/>
-    <!-- lunettes aviateur -->
-    <path d="M30 31 L90 31" stroke="#1b1b1b" stroke-width="2.4"/>
-    <path d="M33 30 C33 28 37 27 46 27 C55 27 58 29 58 32 C58 40 53 45 45 45 C37 45 33 39 33 30 Z" fill="#141414" stroke="#c9a227" stroke-width="1.6"/>
-    <path d="M62 32 C62 29 65 27 74 27 C83 27 87 28 87 30 C87 39 83 45 75 45 C67 45 62 40 62 32 Z" fill="#141414" stroke="#c9a227" stroke-width="1.6"/>
-    <path d="M58 31 Q60 29 62 31" stroke="#c9a227" stroke-width="1.6" fill="none"/>
-    <!-- reflets -->
-    <path d="M37 31 L44 31 L38 38 Z" fill="#ffffff" opacity=".35"/>
-    <path d="M66 31 L73 31 L67 38 Z" fill="#ffffff" opacity=".35"/>
-  </g></svg>
-    <div>K7<small>BALADEUR DE POCHE</small></div>
+  <span aria-hidden="true"></span>
+  <div class="logo" id="goLib" role="button" tabindex="0" aria-label="K7 Audiobook — retour à l'étagère">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 70" aria-hidden="true">
+<rect x="4" y="32" width="88" height="36" rx="5" fill="#ff8a1f"/>
+<rect x="11" y="37" width="74" height="12" rx="2.5" fill="#d96a00"/>
+<rect x="28" y="50" width="40" height="13" rx="4" fill="#14161f"/>
+<circle cx="38" cy="56.5" r="4.2" fill="#ff8a1f"/><circle cx="58" cy="56.5" r="4.2" fill="#ff8a1f"/>
+<circle cx="38" cy="56.5" r="1.7" fill="#14161f"/><circle cx="58" cy="56.5" r="1.7" fill="#14161f"/>
+<g transform="translate(5.3 -6.4) scale(.7)"><g transform="translate(3.2 3.2)" fill="#14161f"> <ellipse cx="38" cy="18" rx="7" ry="6"/><ellipse cx="82" cy="18" rx="7" ry="6"/> <path d="M30 40 C30 22 44 14 60 14 C78 14 92 22 92 38 L92 56 C92 66 84 72 72 72 L48 72 C36 72 30 64 30 54 Z"/> </g> <g transform="translate(-1.6 -1.2)" fill="#ff2e88" opacity=".55"> <path d="M30 40 C30 22 44 14 60 14 C78 14 92 22 92 38 L92 56 C92 66 84 72 72 72 L48 72 C36 72 30 64 30 54 Z"/> </g> <ellipse cx="38" cy="18" rx="6" ry="5" fill="#d96a00"/> <ellipse cx="82" cy="18" rx="6" ry="5" fill="#d96a00"/> <path d="M30 40 C30 22 44 14 60 14 C78 14 92 22 92 38 L92 56 C92 66 84 72 72 72 L48 72 C36 72 30 64 30 54 Z" fill="#ff8a1f"/> <path d="M40 52 C40 46 48 44 60 44 C72 44 80 46 80 52 L80 58 C80 66 72 70 60 70 C48 70 40 66 40 58 Z" fill="#ffad5c"/> <ellipse cx="53" cy="52" rx="2.8" ry="2" fill="#14161f"/> <ellipse cx="67" cy="52" rx="2.8" ry="2" fill="#14161f"/> <path d="M51 62 Q60 60.5 69 62" stroke="#14161f" stroke-width="2.4" fill="none" stroke-linecap="round"/> <path d="M28 31 L92 31" stroke="#14161f" stroke-width="3"/> <path d="M33 30 C33 28 37 27 46 27 C55 27 58 29 58 32 C58 40 53 45 45 45 C37 45 33 39 33 30 Z" fill="#14161f"/> <path d="M62 32 C62 29 65 27 74 27 C83 27 87 28 87 30 C87 39 83 45 75 45 C67 45 62 40 62 32 Z" fill="#14161f"/> <path d="M38 31 L45 31 L39 38 Z" fill="#fff" opacity=".55"/> <path d="M67 31 L74 31 L68 38 Z" fill="#fff" opacity=".55"/></g></svg>
+    <div class="wordmark"><b>K7</b><small>AUDIOBOOK</small></div>
   </div>
-  <div class="sp"></div>
-  <button class="ib acc" id="btnImport">＋ Ajouter</button>
-  <button class="ib" id="btnSettings" title="Réglages">⚙</button>
+  <button class="ib gear" id="btnSettings" title="Réglages" aria-label="Réglages">⚙</button>
 </header>
 
 <!-- ===================== BIBLIOTHÈQUE ===================== -->
@@ -934,7 +921,7 @@ $("#group").onchange = e => { setSetting({group: e.target.value}); render(); };
 $("#goLib").onclick = showLib;
 $("#deckBack").onclick = showLib;
 $("#btnSettings").onclick = openSettings;
-$("#btnImport").onclick = () => openSheet(`<h3>Ajouter un livre <button class="x" data-close>×</button></h3>
+const openAdd = () => openSheet(`<h3>Ajouter un livre <button class="x" data-close>×</button></h3>
   <div class="btns" style="flex-direction:column">
    <button class="ib acc" data-act="addfiles">＋ Fichiers d'un livre (mp3, m4b, image de couverture…)</button>
    <button class="ib" data-act="adddir">＋ Tout un dossier (ex : Audiobook) — un sous-dossier = un livre</button></div>
@@ -1805,6 +1792,9 @@ async function openSettings(){
   const tg = (id, label, on, hint = "") => `<label class="sw2"><span>${label}${hint ? `<br><span class="note">${hint}</span>` : ""}</span><input type="checkbox" id="${id}" ${on ? "checked" : ""}></label>`;
   const rng = (id, label, val) => `<div class="fld"><span>${label}</span><div class="range"><input type="range" id="${id}" min="0" max="1" step="0.05" value="${val}"><b id="${id}V">${Math.round(val * 10)}</b></div></div>`;
   openSheet(`<h3>⚙ Réglages <button class="x" data-close>×</button></h3>
+   <div class="stitle">＋ Ajouter des livres</div>
+   <div class="btns" style="margin:0 0 4px"><button class="ib acc" data-act="addfiles">＋ Fichiers d'un livre</button><button class="ib" data-act="adddir">＋ Tout un dossier</button></div>
+   <p class="note" style="margin:0">Un sous-dossier = un livre. « Auteur - Titre », [mp3-192], (Série 5), CD1/CD2 sont compris ; les livres déjà présents sont sautés.</p>
    <div class="stitle">🎨 Apparence</div>
    <div class="fld"><span>Habillage du walkman</span><div class="skins" id="stSkin">${SKIN_LIST.map(([k, n, bg]) => `<button class="skin ${k === (s.skin || "alu88") ? "on" : ""}" data-v="${k}"><i style="background:${bg}"></i>${n}</button>`).join("")}</div></div>
    <div class="fld"><span>Couleur de l'écran</span><div class="seg" id="stLcd">${LCD_LIST.map(([k, n, c]) => `<button data-v="${k}" class="${k === (s.lcd || "vert") ? "on" : ""}"><span style="color:${c};text-shadow:0 0 6px ${c}">●</span> ${n}</button>`).join("")}</div></div>
@@ -1830,7 +1820,7 @@ async function openSettings(){
    <div class="stitle">📚 Bibliothèque</div>
    ${tg("stAutoCover", "Chercher les pochettes manquantes", s.autoCover !== false, "Apple Livres, Google Livres, Open Library")}
    ${tg("stAutoSum", "Chercher les résumés", s.autoSum !== false, "Wikipédia, Apple Livres, Google Livres")}
-   <div class="btns" style="margin:4px 0 6px"><button class="ib acc" data-act="addfiles">＋ Fichiers</button><button class="ib" data-act="adddir">＋ Dossier(s)</button><button class="ib" id="fillAll">ⓘ Compléter les infos</button></div>
+   <div class="btns" style="margin:4px 0 6px"><button class="ib" id="fillAll">ⓘ Compléter les infos maintenant</button></div>
    <div class="stitle">💾 Sauvegarde</div>
    <p class="note" style="margin-top:0">Progression, signets, notes, critères, fiches corrigées, résumés et pochettes choisies (pas les fichiers audio). ${s.lastBackup ? "Dernière : " + new Date(s.lastBackup).toLocaleDateString("fr-FR") : "<b>Jamais faite.</b>"}</p>
    <div class="btns" style="margin:0 0 6px"><button class="ib acc" id="bkExp">💾 Sauvegarder</button><button class="ib" id="bkImp">♻ Restaurer</button></div>
@@ -1838,7 +1828,7 @@ async function openSettings(){
    ${storage}
    <div class="stitle">ℹ À propos</div>
    <div style="display:flex;gap:12px;align-items:center"><svg viewBox="0 0 120 120" width="56" height="56" aria-hidden="true">${CAPY}</svg>
-   <p class="note" style="margin:0">K7 Baladeur — un label <b>Kawaii App</b>. Rien n'est envoyé nulle part à part le titre et l'auteur des livres pour chercher pochettes et résumés.<br>Maintenir ◀◀/▶▶ = défilement rapide · double-tap sur VITESSE = ×1 · appui long sur un boîtier = fiche.</p></div>`);
+   <p class="note" style="margin:0">K7 Audiobook — un label <b>Kawaii App</b>. Rien n'est envoyé nulle part à part le titre et l'auteur des livres pour chercher pochettes et résumés.<br>Maintenir ◀◀/▶▶ = défilement rapide · double-tap sur VITESSE = ×1 · appui long sur un boîtier = fiche.</p></div>`);
   const redrawDeck = () => { applyLook(); render(); if (player.book) { drawDeckStatic(); updateUI(); } };
   const bindSeg = (id, key, num = true) => $("#" + id).onclick = e => { const btn = e.target.closest("[data-v]"); if (!btn) return; const v = btn.dataset.v;
     setSetting({[key]: num && !isNaN(+v) ? +v : v}); [...$("#" + id).children].forEach(x => x.classList.toggle("on", x.dataset.v === v)); sfx("press"); redrawDeck(); };
