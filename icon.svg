@@ -1,13 +1,40 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="112" fill="#14161f"/>
-  <rect x="56" y="126" width="400" height="260" rx="26" fill="#ff8a1f"/>
-  <rect x="84" y="150" width="344" height="128" rx="12" fill="#f2e8cf"/>
-  <rect x="84" y="232" width="344" height="6" fill="#e94f37"/>
-  <rect x="84" y="242" width="344" height="6" fill="#33a1fd"/>
-  <text x="104" y="210" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="54" fill="#14161f">K7</text>
-  <rect x="150" y="256" width="212" height="70" rx="16" fill="#14161f"/>
-  <circle cx="200" cy="291" r="26" fill="#3b2516"/><circle cx="312" cy="291" r="18" fill="#3b2516"/>
-  <circle cx="200" cy="291" r="13" fill="#f0f0f0"/><circle cx="312" cy="291" r="13" fill="#f0f0f0"/>
-  <circle cx="200" cy="291" r="6" fill="#14161f"/><circle cx="312" cy="291" r="6" fill="#14161f"/>
-  <path d="M120 386 L146 340 H366 L392 386 Z" fill="#14161f" opacity=".55"/>
+  <rect x="40" y="196" width="432" height="250" rx="26" fill="#ff8a1f"/>
+  <rect x="68" y="220" width="376" height="112" rx="12" fill="#f2e8cf"/>
+  <rect x="68" y="294" width="376" height="6" fill="#e94f37"/>
+  <rect x="68" y="304" width="376" height="6" fill="#33a1fd"/>
+  <text x="88" y="280" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="58" fill="#14161f">K7</text>
+  <rect x="146" y="328" width="220" height="72" rx="16" fill="#14161f"/>
+  <circle cx="198" cy="364" r="27" fill="#3b2516"/><circle cx="314" cy="364" r="19" fill="#3b2516"/>
+  <circle cx="198" cy="364" r="13" fill="#f0f0f0"/><circle cx="314" cy="364" r="13" fill="#f0f0f0"/>
+  <circle cx="198" cy="364" r="6" fill="#14161f"/><circle cx="314" cy="364" r="6" fill="#14161f"/>
+  <path d="M104 446 L130 410 H382 L408 446 Z" fill="#14161f" opacity=".55"/>
+  <g transform="translate(226 0) scale(2.1)">
+    <!-- corps assis -->
+    <path d="M30 112 C22 90 26 66 44 56 L78 54 C96 60 102 88 94 112 Z" fill="#b8692f"/>
+    <path d="M44 112 C42 98 46 84 58 80 C70 84 76 98 74 112 Z" fill="#cf8247"/>
+    <!-- pattes avant -->
+    <rect x="46" y="100" width="9" height="12" rx="3" fill="#8f4f22"/>
+    <rect x="64" y="100" width="9" height="12" rx="3" fill="#8f4f22"/>
+    <!-- tête : museau carré typique -->
+    <path d="M30 40 C30 22 44 14 60 14 C78 14 92 22 92 38 L92 56 C92 66 84 72 72 72 L48 72 C36 72 30 64 30 54 Z" fill="#c4763a"/>
+    <!-- oreilles -->
+    <ellipse cx="38" cy="18" rx="6" ry="5" fill="#8f4f22"/>
+    <ellipse cx="82" cy="18" rx="6" ry="5" fill="#8f4f22"/>
+    <!-- museau -->
+    <path d="M40 52 C40 46 48 44 60 44 C72 44 80 46 80 52 L80 58 C80 66 72 70 60 70 C48 70 40 66 40 58 Z" fill="#a85e29"/>
+    <ellipse cx="53" cy="52" rx="2.6" ry="1.8" fill="#3a1d0b"/>
+    <ellipse cx="67" cy="52" rx="2.6" ry="1.8" fill="#3a1d0b"/>
+    <!-- bouche blasée -->
+    <path d="M52 62 Q60 60.5 68 62" stroke="#3a1d0b" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- lunettes aviateur -->
+    <path d="M30 31 L90 31" stroke="#1b1b1b" stroke-width="2.4"/>
+    <path d="M33 30 C33 28 37 27 46 27 C55 27 58 29 58 32 C58 40 53 45 45 45 C37 45 33 39 33 30 Z" fill="#141414" stroke="#c9a227" stroke-width="1.6"/>
+    <path d="M62 32 C62 29 65 27 74 27 C83 27 87 28 87 30 C87 39 83 45 75 45 C67 45 62 40 62 32 Z" fill="#141414" stroke="#c9a227" stroke-width="1.6"/>
+    <path d="M58 31 Q60 29 62 31" stroke="#c9a227" stroke-width="1.6" fill="none"/>
+    <!-- reflets -->
+    <path d="M37 31 L44 31 L38 38 Z" fill="#ffffff" opacity=".35"/>
+    <path d="M66 31 L73 31 L67 38 Z" fill="#ffffff" opacity=".35"/>
+  </g>
 </svg>
