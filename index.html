@@ -309,7 +309,7 @@ main{max-width:1200px;margin:0 auto;padding:14px 16px 110px}
 #lib[data-tile="s"] .grid{grid-template-columns:repeat(auto-fill,minmax(112px,1fr))}
 #lib[data-tile="l"] .grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
 body.flat .case{transform:none!important}body.flat .edge{display:none}body.flat .case{width:100%;margin-left:0}
-.capy-stk{position:absolute;right:16px;bottom:12px;width:34px;height:34px;transform:rotate(9deg);filter:drop-shadow(0 1px 1px #0006);pointer-events:none}
+.capy-stk{position:absolute;right:16px;bottom:12px;width:34px;height:34px;border-radius:50%;background:#fbf8f0;display:grid;place-items:end center;overflow:hidden;transform:rotate(9deg);filter:drop-shadow(0 1px 1px #0006);pointer-events:none}.capy-stk img{height:30px;width:auto;display:block}
 .skins{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
 .skin{border:2px solid var(--line);border-radius:12px;padding:6px;background:var(--card);text-align:center;font-size:12px}
 .skin.on{border-color:var(--accent)}
@@ -408,7 +408,7 @@ body.flat .case{transform:none!important}body.flat .edge{display:none}body.flat 
       <button class="mk" id="mSet">⚙<small>RÉGLAGES</small></button>
     </div>
     <div class="grill"></div>
-    <svg class="capy-stk" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="62" r="58" fill="#fbf8f0"/><g transform="translate(6 6) scale(.9)"><path d="M30 112 C22 90 26 66 44 56 L78 54 C96 60 102 88 94 112 Z" fill="#b8692f"/> <path d="M44 112 C42 98 46 84 58 80 C70 84 76 98 74 112 Z" fill="#cf8247"/> <rect x="46" y="100" width="9" height="12" rx="3" fill="#8f4f22"/> <rect x="64" y="100" width="9" height="12" rx="3" fill="#8f4f22"/> <path d="M30 40 C30 22 44 14 60 14 C78 14 92 22 92 38 L92 56 C92 66 84 72 72 72 L48 72 C36 72 30 64 30 54 Z" fill="#c4763a"/> <ellipse cx="38" cy="18" rx="6" ry="5" fill="#8f4f22"/> <ellipse cx="82" cy="18" rx="6" ry="5" fill="#8f4f22"/> <path d="M40 52 C40 46 48 44 60 44 C72 44 80 46 80 52 L80 58 C80 66 72 70 60 70 C48 70 40 66 40 58 Z" fill="#a85e29"/> <ellipse cx="53" cy="52" rx="2.6" ry="1.8" fill="#3a1d0b"/> <ellipse cx="67" cy="52" rx="2.6" ry="1.8" fill="#3a1d0b"/> <path d="M52 62 Q60 60.5 68 62" stroke="#3a1d0b" stroke-width="2" fill="none" stroke-linecap="round"/> <path d="M30 31 L90 31" stroke="#1b1b1b" stroke-width="2.4"/> <path d="M33 30 C33 28 37 27 46 27 C55 27 58 29 58 32 C58 40 53 45 45 45 C37 45 33 39 33 30 Z" fill="#141414" stroke="#c9a227" stroke-width="1.6"/> <path d="M62 32 C62 29 65 27 74 27 C83 27 87 28 87 30 C87 39 83 45 75 45 C67 45 62 40 62 32 Z" fill="#141414" stroke="#c9a227" stroke-width="1.6"/> <path d="M58 31 Q60 29 62 31" stroke="#c9a227" stroke-width="1.6" fill="none"/> <path d="M37 31 L44 31 L38 38 Z" fill="#ffffff" opacity=".35"/> <path d="M66 31 L73 31 L67 38 Z" fill="#ffffff" opacity=".35"/></g></svg>
+    <span class="capy-stk" aria-hidden="true"><img src="capy-logo.png" alt=""></span>
   </div>
 </section>
 
@@ -1822,7 +1822,7 @@ async function openSettings(){
    ${tg("stNag", "Rappel de sauvegarde tous les 14 jours", s.nag !== false)}
    ${storage}
    <div class="stitle">ℹ À propos</div>
-   <div style="display:flex;gap:12px;align-items:center"><svg viewBox="0 0 120 120" width="56" height="56" aria-hidden="true">${CAPY}</svg>
+   <div style="display:flex;gap:12px;align-items:center"><img src="capy-logo.png" alt="CapyCool" width="43" height="56">
    <p class="note" style="margin:0">K7 Audiobook — un label <b>Kawaii App</b>. Rien n'est envoyé nulle part à part le titre et l'auteur des livres pour chercher pochettes et résumés.<br>Maintenir ◀◀/▶▶ = défilement rapide · double-tap sur VITESSE = ×1 · appui long sur un boîtier = fiche.</p></div>`);
   const redrawDeck = () => { applyLook(); render(); if (player.book) { drawDeckStatic(); updateUI(); } };
   const bindSeg = (id, key, num = true) => $("#" + id).onclick = e => { const btn = e.target.closest("[data-v]"); if (!btn) return; const v = btn.dataset.v;
@@ -1845,7 +1845,7 @@ async function openSettings(){
 }
 
 /* ---------- apparence & options ---------- */
-const CAPY = `<path d="M30 112 C22 90 26 66 44 56 L78 54 C96 60 102 88 94 112 Z" fill="#b8692f"/> <path d="M44 112 C42 98 46 84 58 80 C70 84 76 98 74 112 Z" fill="#cf8247"/> <rect x="46" y="100" width="9" height="12" rx="3" fill="#8f4f22"/> <rect x="64" y="100" width="9" height="12" rx="3" fill="#8f4f22"/> <path d="M30 40 C30 22 44 14 60 14 C78 14 92 22 92 38 L92 56 C92 66 84 72 72 72 L48 72 C36 72 30 64 30 54 Z" fill="#c4763a"/> <ellipse cx="38" cy="18" rx="6" ry="5" fill="#8f4f22"/> <ellipse cx="82" cy="18" rx="6" ry="5" fill="#8f4f22"/> <path d="M40 52 C40 46 48 44 60 44 C72 44 80 46 80 52 L80 58 C80 66 72 70 60 70 C48 70 40 66 40 58 Z" fill="#a85e29"/> <ellipse cx="53" cy="52" rx="2.6" ry="1.8" fill="#3a1d0b"/> <ellipse cx="67" cy="52" rx="2.6" ry="1.8" fill="#3a1d0b"/> <path d="M52 62 Q60 60.5 68 62" stroke="#3a1d0b" stroke-width="2" fill="none" stroke-linecap="round"/> <path d="M30 31 L90 31" stroke="#1b1b1b" stroke-width="2.4"/> <path d="M33 30 C33 28 37 27 46 27 C55 27 58 29 58 32 C58 40 53 45 45 45 C37 45 33 39 33 30 Z" fill="#141414" stroke="#c9a227" stroke-width="1.6"/> <path d="M62 32 C62 29 65 27 74 27 C83 27 87 28 87 30 C87 39 83 45 75 45 C67 45 62 40 62 32 Z" fill="#141414" stroke="#c9a227" stroke-width="1.6"/> <path d="M58 31 Q60 29 62 31" stroke="#c9a227" stroke-width="1.6" fill="none"/> <path d="M37 31 L44 31 L38 38 Z" fill="#ffffff" opacity=".35"/> <path d="M66 31 L73 31 L67 38 Z" fill="#ffffff" opacity=".35"/>`;
+
 const SKIN_LIST = [
   ["alu88", "Alu 88", "linear-gradient(170deg,#d6dce6,#8590a3)", "K7·88", "AUTO-STOP · <em>TYPE II</em> · STÉRÉO"],
   ["bleu79", "Bleu 79", "linear-gradient(180deg,#5d82b8 0 50%,#c9ced6 50%)", "K7-L2", "STEREO CASSETTE PLAYER · <em>HOT LINE</em>"],
