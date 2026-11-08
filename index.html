@@ -91,7 +91,22 @@ main{max-width:1200px;margin:0 auto;padding:14px 16px 110px}
 .peek .ph{display:flex;gap:14px;align-items:flex-start;margin-bottom:10px}
 .peek .ph img,.peek .ph .cv{width:96px;aspect-ratio:2/3;object-fit:cover;border-radius:6px;flex:none;background:#333}
 .peek .ph b{display:block;font-size:18px;line-height:1.2;margin-bottom:4px;text-wrap:balance}
-.peek .sum{line-height:1.55;font-size:15px;max-height:46dvh;overflow:auto}
+.peek .sum{line-height:1.55;font-size:15px;max-height:34dvh;overflow:auto}
+.ib.lu{background:var(--ok);border-color:var(--ok);color:#0b1d10;font-weight:700}
+.jr{border-top:1px solid var(--line);padding:4px 0}
+.jr>summary{cursor:pointer;font-weight:700;padding:10px 0;list-style:none;display:flex;gap:8px;align-items:center}
+.jr>summary::-webkit-details-marker{display:none}
+.jr>summary:after{content:"▾";margin-left:auto;color:var(--muted)}.jr:not([open])>summary:after{transform:rotate(-90deg)}
+.jr .avg{font-size:12px;font-weight:700;padding:2px 7px;border-radius:6px;background:#ffd34d22;color:var(--warn)}
+.crit{display:flex;flex-direction:column;gap:2px}
+.cr{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cr>span{font-size:14px;user-select:none;-webkit-user-select:none}
+.cr .stars button{font-size:22px;padding:0 1px}
+.addrow{display:flex;gap:8px;margin:8px 0 6px}.addrow input{flex:1;min-width:0}
+.nlist{display:flex;flex-direction:column;gap:6px}
+.ni{display:flex;align-items:flex-start;gap:8px;background:var(--card);border-radius:9px;padding:7px 10px;font-size:14px;line-height:1.4}
+.ni span{flex:1;min-width:0;overflow-wrap:anywhere}
+.ni .nx{background:none;border:none;color:var(--muted);font-size:14px;padding:2px 4px}
 .tape:focus-visible{outline:none}.tape:focus-visible .front{outline:2px solid var(--accent);outline-offset:2px}
 /* jaquette */
 .jc{position:absolute;inset:0 0 0 9.5%;display:flex;flex-direction:column;background:var(--lab,#f2e8cf);color:var(--labink,#16161a)}
@@ -653,8 +668,16 @@ function hiss(on){
    ================================================================ */
 const R_MIN = 16, R_MAX = 34;
 function packR(p){ return [Math.sqrt(R_MIN**2 + (R_MAX**2-R_MIN**2)*(1-p)), Math.sqrt(R_MIN**2 + (R_MAX**2-R_MIN**2)*p)]; }
-function hub(cx, cy, id){ let teeth = ""; for (let k=0;k<6;k++) teeth += `<rect x="-2.2" y="-13" width="4.4" height="5" rx="1" transform="rotate(${k*60})" fill="#d9d9d9"/>`;
-  return `<g transform="translate(${cx} ${cy})"><g ${id ? `id="${id}"` : ""}><circle r="13" fill="#f0f0f0"/><circle r="8.5" fill="#1a1a1a"/>${teeth}</g></g>`; }
+// moyeu de K7 : anneau blanc, 6 dents vers l'intérieur, + repères sur la bande qui tournent avec lui
+function hub(cx, cy, id, rp){ let teeth = "", spokes = "";
+  for (let k=0;k<6;k++) teeth += `<path d="M-2.6 -9.6 L2.6 -9.6 L1.6 -6.2 L-1.6 -6.2 Z" transform="rotate(${k*60})" fill="#e8e8e8"/>`;
+  for (let k=0;k<3;k++) spokes += `<rect x="-1.3" y="-14.5" width="2.6" height="5" rx=".8" transform="rotate(${k*120+30})" fill="#bfbfbf"/>`;
+  const sid = id ? id.replace("hub", "") : "";
+  return `<g transform="translate(${cx} ${cy})"><g ${id ? `id="${id}"` : ""}>
+    ${id ? `<line id="seam${sid}" x1="15" y1="0" x2="${rp - 1}" y2="0" stroke="#120904" stroke-width="1.6" opacity=".75"/>
+    <circle id="dash${sid}" r="${(rp + 15) / 2}" fill="none" stroke="#ffffff" stroke-opacity=".16" stroke-width="${Math.max(1, rp - 16)}" stroke-dasharray="6 22"/>` : ""}
+    <circle r="14.5" fill="#f4f4f4" stroke="#c9c9c9" stroke-width="1"/><circle r="10" fill="#151515"/>${teeth}${spokes}
+    <circle r="14.5" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width=".8" stroke-dasharray="20 71"/></g></g>`; }
 function cassetteSVG(o){
   const {title="", author="", color="#f2e8cf", p=0, cover=null, big=false, side="A"} = o;
   const ink = darkLabel(color) ? "#f3f3f3" : "#1d1d1d"; const [rl, rr] = packR(p);
@@ -664,6 +687,8 @@ function cassetteSVG(o){
   return `
   <defs>
     <linearGradient id="sh${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3e4a"/><stop offset="1" stop-color="#1c1f27"/></linearGradient>
+    ${["L","R"].map((k,n) => `<radialGradient id="ring${uid}${k}" gradientUnits="userSpaceOnUse" cx="${n?250:150}" cy="139" r="1.6" spreadMethod="repeat"><stop offset="0" stop-color="#3f2716"/><stop offset=".5" stop-color="#4a2f1b"/><stop offset="1" stop-color="#341f11"/></radialGradient>`).join("")}
+    <radialGradient id="sheen${uid}" cx="38%" cy="32%" r="70%"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".45" stop-color="#fff" stop-opacity=".04"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></radialGradient>
     <clipPath id="cw${uid}"><rect x="96" y="104" width="208" height="70" rx="10"/></clipPath>
     ${cover ? `<clipPath id="cc${uid}"><rect x="30" y="24" width="58" height="58" rx="5"/></clipPath>` : ""}
   </defs>
@@ -680,9 +705,11 @@ function cassetteSVG(o){
   <rect x="88" y="98" width="224" height="82" rx="14" fill="#11131a"/>
   <g clip-path="url(#cw${uid})">
     <rect x="96" y="104" width="208" height="70" fill="#20232c"/>
-    <circle ${big?'id="packL"':""} cx="150" cy="139" r="${rl}" fill="#3b2516"/>
-    <circle ${big?'id="packR"':""} cx="250" cy="139" r="${rr}" fill="#3b2516"/>
-    ${hub(150,139, big ? "hubL" : "")}${hub(250,139, big ? "hubR" : "")}
+    <circle ${big?'id="packL"':""} cx="150" cy="139" r="${rl}" fill="url(#ring${uid}L)"/>
+    <circle ${big?'id="packR"':""} cx="250" cy="139" r="${rr}" fill="url(#ring${uid}R)"/>
+    <circle ${big?'id="shL"':""} cx="150" cy="139" r="${rl}" fill="url(#sheen${uid})"/>
+    <circle ${big?'id="shR"':""} cx="250" cy="139" r="${rr}" fill="url(#sheen${uid})"/>
+    ${hub(150,139, big ? "hubL" : "", rl)}${hub(250,139, big ? "hubR" : "", rr)}
     <rect x="96" y="104" width="208" height="70" fill="#9fb8ff10"/>
   </g>
   <rect x="96" y="104" width="208" height="70" rx="10" fill="none" stroke="#ffffff30"/>
@@ -775,7 +802,7 @@ function tileHTML(b){
       <span class="dbtn ${bInfo(b)?.at ? "has" : ""}" data-dos="${b.id}" title="Dossier" role="button" aria-label="Dossier">ⓘ</span>
       </div>
     </div>
-    <div class="meta"><b>${ser?.ord ? "T" + esc(ser.ord) + " · " : ""}${fmtLong(bDur(b))}${p>0 && p<1 ? ` · ${Math.round(p*100)}%` : ""}</b><span class="st" style="color:${STATUS_COL[st]}">${STATUS[st]}</span></div>
+    <div class="meta"><b>${critAvg(b) ? `<span style="color:var(--warn)">★${critAvg(b).toFixed(1)}</span> · ` : ""}${ser?.ord ? "T" + esc(ser.ord) + " · " : ""}${fmtLong(bDur(b))}${p>0 && p<1 ? ` · ${Math.round(p*100)}%` : ""}</b><span class="st" style="color:${STATUS_COL[st]}">${STATUS[st]}</span></div>
   </button>`;
 }
 function emptyHTML(){
@@ -944,7 +971,8 @@ function updateUI(){
   const ct = Math.floor(pos / 10) % 1000; [...$("#counter").children].forEach((s, i) => s.textContent = String(ct).padStart(3,"0")[i]);
   document.querySelector('.key.play').innerHTML = (A.paused ? "▶" : "❚❚") + `<small>${A.paused ? "PLAY" : "PAUSE"}</small>`;
   const [rl, rr] = packR(p); const pl = $("#packL"), pr = $("#packR");
-  if (pl) { pl.setAttribute("r", rl); pr.setAttribute("r", rr); $("#tapePath")?.setAttribute("d", `M${150-rl+2} 170 L120 236 H280 L${250+rr-2} 170`); }
+  if (pl) { pl.setAttribute("r", rl); pr.setAttribute("r", rr); $("#shL")?.setAttribute("r", rl); $("#shR")?.setAttribute("r", rr);
+    for (const [k, r] of [["L", rl], ["R", rr]]) { $("#seam" + k)?.setAttribute("x2", r - 1); const d = $("#dash" + k); if (d) { d.setAttribute("r", (r + 15) / 2); d.setAttribute("stroke-width", Math.max(1, r - 16)); } } $("#tapePath")?.setAttribute("d", `M${150-rl+2} 170 L120 236 H280 L${250+rr-2} 170`); }
   renderMini();
   if ("mediaSession" in navigator && isFinite(A.duration) && A.duration > 0) {
     try { navigator.mediaSession.setPositionState({duration: A.duration, playbackRate: rate, position: Math.min(A.currentTime, A.duration)}); } catch {} }
@@ -1536,6 +1564,44 @@ async function importBackup(file){
   toast(`${n} livre${n > 1 ? "s" : ""} restauré${n > 1 ? "s" : ""}${miss ? ` · ${miss} pas trouvé${miss > 1 ? "s" : ""} (réimporte-les puis restaure à nouveau)` : ""}`, 6000);
 }
 
+/* ---------- mes critères + carnet (personnages, lieux…) ---------- */
+const DEF_CRIT = ["Histoire", "Personnages", "Style", "Voix du lecteur", "Suspense", "Fin"];
+const NOTE_KINDS = [["people", "👤", "Personnages"], ["places", "📍", "Lieux"], ["times", "🗓", "Époques & événements"], ["misc", "📝", "Notes"]];
+const crits = () => S().criteria || DEF_CRIT;
+function critAvg(b){ const c = bs(b.id).crit || {}; const v = crits().map(k => c[k]).filter(x => x > 0); return v.length ? v.reduce((a, x) => a + x, 0) / v.length : 0; }
+function journalHTML(b){
+  const c = bs(b.id).crit || {}, nt = bs(b.id).notes || {}, avg = critAvg(b);
+  return `<details class="jr" open><summary>★ Mes critères ${avg ? `<span class="avg">${avg.toFixed(1)}/5</span>` : ""}</summary>
+    <div class="crit">${crits().map(k => `<div class="cr"><span>${esc(k)}</span><div class="stars" data-crit="${esc(k)}">${[1,2,3,4,5].map(i => `<button data-r="${i}" class="${i <= (c[k]||0) ? "on" : ""}" aria-label="${i} sur 5">★</button>`).join("")}</div></div>`).join("")}</div>
+    <div class="addrow"><input id="crNew" placeholder="Ajouter un critère (ex : Ambiance)"><button class="ib" id="crAdd">＋</button></div>
+    <p class="note">Les critères sont les mêmes pour tous tes livres. Appui long sur un critère pour le retirer.</p></details>
+  ${NOTE_KINDS.map(([k, ic, lb]) => `<details class="jr" ${nt[k]?.length ? "open" : ""}><summary>${ic} ${lb} ${nt[k]?.length ? `<span class="avg">${nt[k].length}</span>` : ""}</summary>
+    <div class="nlist" data-kind="${k}">${(nt[k] || []).map((x, i) => `<div class="ni"><span><b>${esc(x.n)}</b>${x.d ? ` — ${esc(x.d)}` : ""}</span><button class="nx" data-i="${i}" aria-label="Supprimer">✕</button></div>`).join("")}</div>
+    <div class="addrow"><input data-new="${k}" placeholder="${k === "people" ? "Nom — qui c'est (ex : Servaz — le flic)" : k === "places" ? "Lieu — ce qui s'y passe" : k === "times" ? "Date ou époque — événement" : "Une idée, une citation, un moment…"}"><button class="ib" data-add="${k}">＋</button></div></details>`).join("")}`;
+}
+function bindJournal(b){
+  const redraw = () => { const open = [...document.querySelectorAll(".peek .jr")].map(d => d.open);
+    document.querySelectorAll(".peek .jr").forEach(d => d.remove()); document.querySelector(".peek").insertAdjacentHTML("beforeend", journalHTML(b));
+    document.querySelectorAll(".peek .jr").forEach((d, i) => { if (open[i] !== undefined) d.open = open[i] || d.open; }); bindJournal(b); render(); };
+  document.querySelectorAll(".peek [data-crit]").forEach(st => {
+    st.onclick = e => { const r = +e.target.dataset.r; if (!r) return; const c = {...(bs(b.id).crit || {})}; c[st.dataset.crit] = c[st.dataset.crit] === r ? 0 : r; setBook(b.id, {crit: c}); clunk(); redraw(); };
+    let t; const lab = st.previousElementSibling;
+    lab.onpointerdown = () => { t = setTimeout(() => { setSetting({criteria: crits().filter(x => x !== st.dataset.crit)}); toast(`Critère « ${st.dataset.crit} » retiré`); redraw(); }, 650); };
+    lab.onpointerup = lab.onpointerleave = () => clearTimeout(t);
+  });
+  const addCrit = () => { const v = $("#crNew").value.trim(); if (!v || crits().includes(v)) return; setSetting({criteria: [...crits(), v]}); redraw(); };
+  $("#crAdd").onclick = addCrit; $("#crNew").onkeydown = e => e.key === "Enter" && addCrit();
+  document.querySelectorAll(".peek [data-add]").forEach(btn => {
+    const k = btn.dataset.add, inp = document.querySelector(`.peek [data-new="${k}"]`);
+    const add = () => { const v = inp.value.trim(); if (!v) return; const [n, ...d] = v.split(/\s+[—–-]\s+|\s*:\s+/);
+      const nt = {...(bs(b.id).notes || {})}; nt[k] = [...(nt[k] || []), {n: n.trim(), d: d.join(" — ").trim(), at: Date.now()}]; setBook(b.id, {notes: nt}); redraw();
+      setTimeout(() => document.querySelector(`.peek [data-new="${k}"]`)?.focus(), 50); };
+    btn.onclick = add; inp.onkeydown = e => e.key === "Enter" && add();
+  });
+  document.querySelectorAll(".peek .nlist").forEach(l => l.onclick = e => { const i = e.target.dataset.i; if (i == null) return;
+    const k = l.dataset.kind, nt = {...(bs(b.id).notes || {})}; nt[k] = (nt[k] || []).filter((_, j) => j !== +i); setBook(b.id, {notes: nt}); redraw(); });
+}
+
 /* ---------- appui long sur un boîtier : résumé ---------- */
 function bSummary(b){
   const i = bInfo(b); if (!i) return "";
@@ -1544,13 +1610,17 @@ function bSummary(b){
 }
 function openPeek(b){
   const cv = coverOf(b), ser = bSeries(b), yr = bYear(b), sum = bSummary(b);
-  openSheet(`<div class="peek"><h3 style="margin-bottom:8px">Résumé <button class="x" data-close>×</button></h3>
+  openSheet(`<div class="peek"><h3 style="margin-bottom:8px">Fiche <button class="x" data-close>×</button></h3>
     <div class="ph">${cv ? `<img src="${esc(cv)}" alt="">` : `<div class="cv" style="background:${bColor(b)}"></div>`}
       <div><b>${esc(bTitle(b))}</b><span class="note">${esc(bAuthor(b))}${yr ? " · " + yr : ""}${ser ? `<br>📚 ${esc(ser.label)}${ser.ord ? " — tome " + esc(ser.ord) : ""}` : ""}<br>${fmtLong(bDur(b))}${bNarr(b) ? " · lu par " + esc(bNarr(b)) : ""}</span></div></div>
     <div class="sum" id="pkSum">${sum ? `<p>${esc(sum).replace(/\n+/g, "</p><p>")}</p>` : `<p class="note">${navigator.onLine ? "Recherche du résumé…" : "Pas encore de résumé : il se charge tout seul dès que le téléphone a du réseau."}</p>`}</div>
-    <div class="btns"><button class="ib acc" id="pkPlay">▶ Écouter</button><button class="ib" id="pkDos">📖 Dossier complet</button></div></div>`);
+    <div class="btns"><button class="ib acc" id="pkPlay">▶ Écouter</button><button class="ib ${bStatus(b) === "termine" ? "lu" : ""}" id="pkRead">${bStatus(b) === "termine" ? "✓ Déjà lu" : "○ Marquer lu"}</button><button class="ib" id="pkDos">📖 Dossier complet</button></div></div>`);
   $("#pkPlay").onclick = () => { closeSheet(); if (player.book?.id === b.id) { showDeck(); play(); } else openBook(b, true); };
   $("#pkDos").onclick = () => openDossier(b);
+  $("#pkRead").onclick = () => { const was = bStatus(b) === "termine";
+    setBook(b.id, was ? {status: (bs(b.id).pos && (bs(b.id).pos.file || bs(b.id).pos.t > 5)) ? "en-cours" : "a-lire", done: null} : {status: "termine", done: Date.now()});
+    const el = $("#pkRead"); el.classList.toggle("lu", !was); el.textContent = was ? "○ Marquer lu" : "✓ Déjà lu"; clunk(); render(); };
+  const pk = document.querySelector(".peek"); pk.insertAdjacentHTML("beforeend", journalHTML(b)); bindJournal(b);
   const getSum = async () => { const i = bInfo(b); if (!i?.at) return enrich(b); const n = await fetchSummary(b, {...i}); await Info.put("b:" + b.id, n); };
   if (!sum && navigator.onLine) getSum().then(() => { const el = $("#pkSum"); if (!el) return;
     const t = bSummary(b); el.innerHTML = t ? `<p>${esc(t).replace(/\n+/g, "</p><p>")}</p>` : `<p class="note">Aucun résumé trouvé pour « ${esc(bTitle(b))} » de ${esc(bAuthor(b))}. Si le titre ou l'auteur est mal écrit, corrige-le dans ✎ Fiche puis réessaie.</p>`; render(); }).catch(() => {});
