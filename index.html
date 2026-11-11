@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#14161f">
-<title>K7 Audiobook</title>
+<title>K7 AudioB</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -325,9 +325,9 @@ body.flat .case{transform:none!important}body.flat .edge{display:none}body.flat 
 
 <header class="top">
   <span aria-hidden="true"></span>
-  <div class="logo" id="goLib" role="button" tabindex="0" aria-label="K7 Audiobook — retour à l'étagère">
+  <div class="logo" id="goLib" role="button" tabindex="0" aria-label="K7 AudioB — retour à l'étagère">
     <svg viewBox="0 0 68 64" aria-hidden="true" shape-rendering="geometricPrecision"><rect x="1" y="20" width="66" height="42" rx="5" fill="#ff8a1f"/><rect x="7" y="25" width="54" height="16" rx="2.5" fill="#ffd6a8"/><rect x="7" y="36" width="54" height="2" fill="#14161f" opacity=".75"/><rect x="17" y="43" width="34" height="13" rx="4" fill="#14161f"/><circle cx="26" cy="49.5" r="4.2" fill="#ff8a1f"/><circle cx="42" cy="49.5" r="4.2" fill="#ff8a1f"/><circle cx="26" cy="49.5" r="1.7" fill="#14161f"/><circle cx="42" cy="49.5" r="1.7" fill="#14161f"/><path d="M12 62 L16 57 H52 L56 62" fill="#14161f" opacity=".35"/></svg><img class="capy-logo" src="capy-logo.png" alt="" width="136" height="180">
-    <div class="wordmark"><b>K7</b><small>AUDIOBOOK</small></div>
+    <div class="wordmark"><b>K7</b><small>AUDIOB</small></div>
   </div>
   <button class="ib gear" id="btnSettings" title="Réglages" aria-label="Réglages">⚙</button>
 </header>
@@ -1801,7 +1801,7 @@ async function openSettings(){
    <div class="btns" style="margin:0 0 4px"><button class="ib acc" data-act="addfiles">＋ Fichiers d'un livre</button><button class="ib" data-act="adddir">＋ Tout un dossier</button></div>
    <p class="note" style="margin:0">Un sous-dossier = un livre. « Auteur - Titre », [mp3-192], (Série 5), CD1/CD2 sont compris ; les livres déjà présents sont sautés.</p>
    <div class="stitle">🎨 Apparence</div>
-   <div class="fld"><span>Habillage du walkman</span><div class="skins" id="stSkin">${SKIN_LIST.map(([k, n, bg]) => `<button class="skin ${k === (s.skin || "alu88") ? "on" : ""}" data-v="${k}"><i style="background:${bg}"></i>${n}</button>`).join("")}</div></div>
+   <div class="fld"><span>Habillage du baladeur</span><div class="skins" id="stSkin">${SKIN_LIST.map(([k, n, bg]) => `<button class="skin ${k === (s.skin || "alu88") ? "on" : ""}" data-v="${k}"><i style="background:${bg}"></i>${n}</button>`).join("")}</div></div>
    <div class="fld"><span>Couleur de l'écran</span><div class="seg" id="stLcd">${LCD_LIST.map(([k, n, c]) => `<button data-v="${k}" class="${k === (s.lcd || "vert") ? "on" : ""}"><span style="color:${c};text-shadow:0 0 6px ${c}">●</span> ${n}</button>`).join("")}</div></div>
    <div class="fld"><span>Taille des boîtiers sur l'étagère</span>${seg("stTile", ["s", "m", "l"], s.tile || "m", v => ({s: "Petits", m: "Moyens", l: "Grands"})[v])}</div>
    ${tg("stFlat", "Boîtiers à plat (sans relief 3D)", s.flat === true, "Plus sobre et plus léger sur les vieux téléphones")}
@@ -1820,7 +1820,7 @@ async function openSettings(){
    <div class="fld"><span>Vitesse par défaut</span>${seg("stSpeed", [0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2], s.speed || 1, v => "×" + v)}</div>
    ${tg("stSpb", "Vitesse mémorisée par livre", !!s.speedPerBook, "Chaque livre garde sa propre vitesse")}
    <div class="fld"><span>Minuterie automatique à chaque lecture</span>${seg("stSleepDef", [0, 15, 30, 45, 60, "chap"], s.sleepDef || 0, v => v === 0 ? "Non" : v === "chap" ? "Fin chap." : v + " min")}</div>
-   ${tg("stWake", "Garder l'écran allumé sur le walkman", s.wake === true, "Seulement pendant la lecture, walkman affiché")}
+   ${tg("stWake", "Garder l'écran allumé sur le baladeur", s.wake === true, "Seulement pendant la lecture, baladeur affiché")}
    ${tg("stTap", "Toucher la cassette = lecture / pause", s.tapCass !== false)}
    <div class="stitle">📚 Bibliothèque</div>
    ${tg("stAutoCover", "Chercher les pochettes manquantes", s.autoCover !== false, "Apple Livres, Google Livres, Open Library")}
@@ -1833,7 +1833,7 @@ async function openSettings(){
    ${storage}
    <div class="stitle">ℹ À propos</div>
    <div style="display:flex;gap:12px;align-items:center"><img src="capy-logo.png" alt="CapyCool" width="43" height="56">
-   <p class="note" style="margin:0">K7 Audiobook — un label <b>Kawaii App</b>. Rien n'est envoyé nulle part à part le titre et l'auteur des livres pour chercher pochettes et résumés.<br>Maintenir ◀◀/▶▶ = défilement rapide · double-tap sur VITESSE = ×1 · appui long sur un boîtier = fiche.</p></div>`);
+   <p class="note" style="margin:0">K7 AudioB — un label <b>Kawaii App</b>. Rien n'est envoyé nulle part à part le titre et l'auteur des livres pour chercher pochettes et résumés.<br>Maintenir ◀◀/▶▶ = défilement rapide · double-tap sur VITESSE = ×1 · appui long sur un boîtier = fiche.</p></div>`);
   const redrawDeck = () => { applyLook(); render(); if (player.book) { drawDeckStatic(); updateUI(); } };
   const bindSeg = (id, key, num = true) => $("#" + id).onclick = e => { const btn = e.target.closest("[data-v]"); if (!btn) return; const v = btn.dataset.v;
     setSetting({[key]: num && !isNaN(+v) ? +v : v}); [...$("#" + id).children].forEach(x => x.classList.toggle("on", x.dataset.v === v)); sfx("press"); redrawDeck(); };
@@ -1858,12 +1858,12 @@ async function openSettings(){
 
 const SKIN_LIST = [
   ["alu88", "Alu 88", "linear-gradient(170deg,#d6dce6,#8590a3)", "K7·88", "AUTO-STOP · <em>TYPE II</em> · STÉRÉO"],
-  ["bleu79", "Bleu 79", "linear-gradient(180deg,#5d82b8 0 50%,#c9ced6 50%)", "K7-L2", "STEREO CASSETTE PLAYER · <em>HOT LINE</em>"],
+  ["bleu79", "Bleu 79", "linear-gradient(180deg,#5d82b8 0 50%,#c9ced6 50%)", "K7·79", "STEREO CASSETTE PLAYER · <em>TALK LINE</em>"],
   ["sport", "Sport jaune", "linear-gradient(170deg,#ffd51e,#d99a00)", "K7 SPORTS", "WATER RESISTANT · <em>A·R</em>"],
   ["noir85", "Noir 85", "linear-gradient(170deg,#34363d,#121317)", "K7 ‹PRO›", "METAL · <em>AUTO-REVERSE</em> · NR"],
-  ["rouge", "Rouge 83", "linear-gradient(170deg,#d8343c,#7c1219)", "K7 ROUGE", "STEREO · <em>MEGA BASS</em>"],
+  ["rouge", "Rouge 83", "linear-gradient(170deg,#d8343c,#7c1219)", "K7 ROUGE", "STEREO · <em>BASS BOOST</em>"],
   ["creme", "Crème 81", "linear-gradient(170deg,#f3ead6,#cdbb96)", "K7 DE LUXE", "2 HEADPHONE JACKS · <em>TYPE I</em>"],
-  ["cristal", "Cristal 92", "linear-gradient(170deg,#3b3f73,#1b1d38),radial-gradient(#7ee8fa,transparent)", "K7 CLEAR", "SEE-THROUGH · <em>DIGITAL</em> · MEGA"],
+  ["cristal", "Cristal 92", "linear-gradient(170deg,#3b3f73,#1b1d38),radial-gradient(#7ee8fa,transparent)", "K7 CLEAR", "SEE-THROUGH · <em>DIGITAL</em> · TURBO"],
 ];
 const LCD_LIST = [["vert", "Vert", "#3dff7a"], ["ambre", "Ambre", "#ffb238"], ["cyan", "Cyan", "#59f3ff"], ["rouge", "Rouge", "#ff4d3d"], ["blanc", "Blanc", "#e7f1ff"]];
 let wakeLock = null;
