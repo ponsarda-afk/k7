@@ -41,6 +41,7 @@ input:focus,select:focus{border-color:var(--blue)}
   background:rgba(20,22,31,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 .logo{display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;justify-self:center}
 .logo svg{width:58px;height:54px;flex:none}
+.logo .cc{align-self:flex-end;margin:0 0 3px -12px;font-size:8px;line-height:1;color:var(--mut,#8b93a7);opacity:.55;pointer-events:none}
 .logo .capy-logo{height:58px;width:auto;flex:none;margin-left:-4px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
 .wordmark{display:flex;flex-direction:column;line-height:1}
 .wordmark b{font-weight:800;font-size:27px;letter-spacing:.02em;color:var(--accent)}
@@ -336,7 +337,7 @@ window.addEventListener("unhandledrejection", function(e){ k7diag("promesse : " 
 <header class="top">
   <span aria-hidden="true"></span>
   <div class="logo" id="goLib" role="button" tabindex="0" aria-label="K7 AudioB — retour à l'étagère">
-    <svg viewBox="0 0 68 64" aria-hidden="true" shape-rendering="geometricPrecision"><rect x="1" y="20" width="66" height="42" rx="5" fill="#ff8a1f"/><rect x="7" y="25" width="54" height="16" rx="2.5" fill="#ffd6a8"/><rect x="7" y="36" width="54" height="2" fill="#14161f" opacity=".75"/><rect x="17" y="43" width="34" height="13" rx="4" fill="#14161f"/><circle cx="26" cy="49.5" r="4.2" fill="#ff8a1f"/><circle cx="42" cy="49.5" r="4.2" fill="#ff8a1f"/><circle cx="26" cy="49.5" r="1.7" fill="#14161f"/><circle cx="42" cy="49.5" r="1.7" fill="#14161f"/><path d="M12 62 L16 57 H52 L56 62" fill="#14161f" opacity=".35"/></svg><img class="capy-logo" src="capy-logo.png" alt="" width="136" height="180">
+    <svg viewBox="0 0 68 64" aria-hidden="true" shape-rendering="geometricPrecision"><rect x="1" y="20" width="66" height="42" rx="5" fill="#ff8a1f"/><rect x="7" y="25" width="54" height="16" rx="2.5" fill="#ffd6a8"/><rect x="7" y="36" width="54" height="2" fill="#14161f" opacity=".75"/><rect x="17" y="43" width="34" height="13" rx="4" fill="#14161f"/><circle cx="26" cy="49.5" r="4.2" fill="#ff8a1f"/><circle cx="42" cy="49.5" r="4.2" fill="#ff8a1f"/><circle cx="26" cy="49.5" r="1.7" fill="#14161f"/><circle cx="42" cy="49.5" r="1.7" fill="#14161f"/><path d="M12 62 L16 57 H52 L56 62" fill="#14161f" opacity=".35"/></svg><img class="capy-logo" src="capy-logo.png" alt="" width="136" height="180"><span class="cc" title="CapyCool © 2026 Antoine Ponsard">©</span>
     <div class="wordmark"><b>K7</b><small>AUDIOB</small></div>
   </div>
   <button class="ib gear" id="btnSettings" title="Réglages" aria-label="Réglages">⚙</button>
@@ -1938,7 +1939,7 @@ async function openSettings(){
    ${storage}
    <div class="stitle">ℹ À propos</div>
    <div style="display:flex;gap:12px;align-items:center"><img src="capy-logo.png" alt="CapyCool" width="43" height="56">
-   <p class="note" style="margin:0">K7 AudioB — un label <b>Kawaii App</b>. Rien n'est envoyé nulle part à part le titre et l'auteur des livres pour chercher pochettes et résumés.<br>Maintenir ◀◀/▶▶ = défilement rapide · double-tap sur VITESSE = ×1 · appui long sur un boîtier = fiche.</p></div>`);
+   <p class="note" style="margin:0">K7 AudioB — un label <b>Kawaii App</b>. CapyCool et K7 AudioB © 2026 Antoine Ponsard. Rien n'est envoyé nulle part à part le titre et l'auteur des livres pour chercher pochettes et résumés.<br>Maintenir ◀◀/▶▶ = défilement rapide · double-tap sur VITESSE = ×1 · appui long sur un boîtier = fiche.</p></div>`);
   const redrawDeck = () => { applyLook(); render(); if (player.book) { drawDeckStatic(); updateUI(); } };
   const bindSeg = (id, key, num = true) => $("#" + id).onclick = e => { const btn = e.target.closest("[data-v]"); if (!btn) return; const v = btn.dataset.v;
     setSetting({[key]: num && !isNaN(+v) ? +v : v}); [...$("#" + id).children].forEach(x => x.classList.toggle("on", x.dataset.v === v)); sfx("press"); redrawDeck(); };

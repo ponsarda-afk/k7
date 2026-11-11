@@ -1,5 +1,5 @@
 // K7 — service worker : garde l'appli dispo hors ligne (les livres sont dans IndexedDB, pas ici)
-const V = "k7-v20";
+const V = "k7-v21";
 const COVERS = "k7-covers"; // pochettes venues du web : gardées d'une version à l'autre
 const COVER_HOSTS = /(^|\.)(mzstatic\.com|books\.google\.com|googleusercontent\.com|covers\.openlibrary\.org|archive\.org|upload\.wikimedia\.org)$/;
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./capy-logo.png", ...["archivo-latin-400","archivo-latin-500","archivo-latin-600","archivo-latin-700","archivo-latin-800","vt323-latin-400","permanent-marker-latin-400"].map(f => `./fonts/${f}-normal.woff2`)];
