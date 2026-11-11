@@ -1,0 +1,75 @@
+# Fabrique l'APK de K7 AudioB à chaque modification de l'appli, et le publie dans « Releases ».
+# Lien fixe pour le téléphone : https://github.com/ponsarda-afk/k7/releases/latest/download/K7-AudioB.apk
+name: APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["index.html", "fonts/**", "capy-logo.png", "apk/**", ".github/workflows/apk.yml"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Appli web → dossier www
+        run: |
+          cd apk
+          mkdir -p www
+          cp ../index.html ../manifest.webmanifest ../icon.svg ../icon-192.png ../icon-512.png ../capy-logo.png www/
+          cp -r ../fonts www/
+
+      - name: Projet Android (Capacitor)
+        run: |
+          cd apk
+          npm install --no-audit --no-fund
+          npx cap add android
+
+      - name: Clé de signature
+        env:
+          KS: ${{ secrets.K7_KEYSTORE }}
+        run: |
+          if [ -n "$KS" ]; then echo "$KS" | base64 -d > apk/android/app/k7.jks; else echo "::warning::Pas de clé : APK de test non signé pour la publication"; fi
+
+      - name: Lecteur natif, icônes, permissions
+        run: |
+          cd apk
+          node prepare.cjs
+          npx cap sync android
+
+      - name: Compilation
+        env:
+          K7_VC: ${{ github.run_number }}
+          K7_KS_PASS: ${{ secrets.K7_KS_PASS }}
+        run: |
+          cd apk/android
+          chmod +x gradlew
+          if [ -f app/k7.jks ]; then ./gradlew --no-daemon assembleRelease; cp app/build/outputs/apk/release/app-release.apk ../K7-AudioB.apk
+          else ./gradlew --no-daemon assembleDebug; cp app/build/outputs/apk/debug/app-debug.apk ../K7-AudioB.apk; fi
+          ls -la ../K7-AudioB.apk
+
+      - name: Publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="apk-${{ github.run_number }}"
+          gh release create "$TAG" apk/K7-AudioB.apk --title "K7 AudioB 1.${{ github.run_number }}" \
+            --notes "Installe K7-AudioB.apk sur le téléphone (lien fixe : releases/latest/download/K7-AudioB.apk)." --latest
