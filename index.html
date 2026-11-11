@@ -475,7 +475,7 @@ const LocalBE = {
   _t: null,
   persist(now){ clearTimeout(this._t); const w = () => IDB.put("kv","state",STATE).catch(e => toast("Erreur de sauvegarde : "+e));
     if (now) w(); else this._t = setTimeout(w, 400); },
-  async audioSrc(b, i){ const f = await IDB.get("files", `${b.id}/${i}`); if (!f) throw new Error("Fichier absent");
+  async audioSrc(b, i){ if (b.uris) return `k7:${b.id}#${i}`; const f = await IDB.get("files", `${b.id}/${i}`); if (!f) throw new Error("Fichier absent");
     if (this.urls.audio) URL.revokeObjectURL(this.urls.audio); return this.urls.audio = URL.createObjectURL(f); },
   coverCache: {},
   coverSrc(b){ return (b.has_cover && this.coverCache[b.id]) || b.cover_url || null; },
@@ -507,7 +507,89 @@ function bProg(b){ if (bStatus(b) === "termine") return 1; const d = bDur(b); re
 /* ================================================================
    Lecture des tags (ID3v2 / MP4) côté navigateur — mode autonome
    ================================================================ */
-const sliceBuf = (blob, a, n) => blob.slice(a, a+n).arrayBuffer();
+/* ================================================================
+   Mode APK (Android) : lecteur natif + dossier du téléphone lu sur place
+   ================================================================ */
+const NATIVE = !!window.Capacitor?.isNativePlatform?.();
+const K7P = NATIVE ? window.Capacitor.registerPlugin("K7Player") : null;
+const b64ToBuf = s => { const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; };
+class NativeFile { // fichier du téléphone, lu par morceaux à la demande : rien n'est copié
+  constructor(o){ this.path = o.path; this.name = o.name; this.size = o.size; this.webkitRelativePath = o.rel; this.native = true;
+    const ext = (o.name.split(".").pop() || "").toLowerCase();
+    this.type = AUDIO_RE.test(o.name) ? "audio/" + ext : IMG_RE.test(o.name) ? "image/" + ext.replace("jpg", "jpeg") : ""; }
+  async range(a, n){ n = Math.max(0, Math.min(n, this.size - a)); if (!n) return new ArrayBuffer(0);
+    const r = await K7P.readRange({path: this.path, offset: a, length: n}); return b64ToBuf(r.data); }
+  async blob(){ return new Blob([await this.range(0, this.size)], {type: this.type}); }
+}
+async function artB64(b){ // pochette réduite pour la notification et l'écran verrouillé
+  const src = coverOf(b); if (!src) return null;
+  try { const im = new Image(); im.crossOrigin = "anonymous"; im.src = src; await im.decode();
+    const k = Math.min(1, 512 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement("canvas");
+    c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k); c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+    return c.toDataURL("image/jpeg", .85).split(",")[1]; } catch { return null; }
+}
+class NativeAudio extends EventTarget { // remplace <audio> : même interface, le son sort du lecteur Android
+  constructor(){ super(); this.preload = "auto"; this.preservesPitch = true; this.defaultPlaybackRate = 1; this.error = null;
+    this._s = {index: 0, position: 0, duration: 0, playWhenReady: false, playing: false, rate: 1, at: performance.now()};
+    this._book = null; this._idx = 0; this._dur = 0; this._vol = 1; this._rate = 1; this._src = ""; this._loading = null;
+    K7P.addListener("state", s => this._upd(s)); K7P.addListener("time", s => this._upd(s));
+    K7P.addListener("advance", e => { this._idx = e.index; this._dur = 0; this.dispatchEvent(new CustomEvent("k7advance", {detail: e.index})); });
+    K7P.addListener("ended", () => { this._s.playWhenReady = false; this._s.playing = false; this.dispatchEvent(new Event("pause")); this.dispatchEvent(new Event("ended")); });
+    K7P.addListener("error", e => { this.error = e; this.dispatchEvent(new Event("error")); });
+    setInterval(() => { if (this._s.playing) this.dispatchEvent(new Event("timeupdate")); }, 500);
+  }
+  _upd(s){
+    if (s.book && this._book && s.book !== this._book) return;
+    const was = this._s; this._s = {...s, at: performance.now()}; this._idx = s.index;
+    if (s.duration > 0) this._dur = s.duration;
+    if (s.playWhenReady !== was.playWhenReady) this.dispatchEvent(new Event(s.playWhenReady ? "play" : "pause"));
+    if (s.playing && !was.playing) this.dispatchEvent(new Event("playing"));
+    if (Math.abs((s.rate || 1) - this._rate) > 1e-3) { this._rate = s.rate; this.dispatchEvent(new Event("ratechange")); }
+    this.dispatchEvent(new Event("timeupdate"));
+  }
+  get src(){ return this._src; }
+  set src(v){
+    this._src = v || "";
+    if (!v) { this._book = null; this._s.playWhenReady = false; K7P.stop().catch(() => {}); return; }
+    const m = /^k7:(.+)#(\d+)$/.exec(v), b = m && BOOKS.find(x => x.id === m[1]); if (!b) return;
+    const i = +m[2]; this._idx = i; this._dur = b.durations[i] || 0;
+    this._s = {...this._s, index: i, position: 0, at: performance.now()};
+    this._loading = (this._book === b.id ? K7P.seek({index: i, position: 0}) : (this._book = b.id, this._load(b, i)))
+      .catch(e => { this.error = e; this.dispatchEvent(new Event("error")); })
+      .finally(() => { this._loading = null; this.dispatchEvent(new Event("loadedmetadata")); });
+  }
+  async _load(b, i){
+    const s = await K7P.load({bookId: b.id, uris: b.uris, names: b.files, index: i, position: 0, title: bTitle(b), artist: bAuthor(b),
+      art: await artB64(b), rate: this._rate, volume: this._vol});
+    this._s = {...s, at: performance.now()};
+  }
+  get duration(){ return this._dur > 0 ? this._dur : NaN; }
+  get currentTime(){ const s = this._s; if (s.index !== this._idx) return 0;
+    const t = s.position + (s.playing ? (performance.now() - s.at) / 1000 * (s.rate || 1) : 0); return this._dur ? Math.min(t, this._dur) : t; }
+  set currentTime(t){ t = Math.max(0, +t || 0); this._s = {...this._s, index: this._idx, position: t, at: performance.now()};
+    K7P.seek({index: this._idx, position: t}).catch(() => {}); }
+  get paused(){ return !this._s.playWhenReady; }
+  async play(){ if (this._loading) await this._loading; if (!this._book) return;
+    if (!this._s.playWhenReady) { this._s.playWhenReady = true; this.dispatchEvent(new Event("play")); }
+    await K7P.play(); }
+  pause(){ if (this._s.playWhenReady) { this._s.playWhenReady = false; this._s.playing = false; this.dispatchEvent(new Event("pause")); } K7P.pause().catch(() => {}); }
+  get playbackRate(){ return this._rate; }
+  set playbackRate(v){ v = +v || 1; if (v === this._rate) return; this._rate = v; this._s.rate = v; K7P.setRate({rate: v}).catch(() => {}); this.dispatchEvent(new Event("ratechange")); }
+  get volume(){ return this._vol; }
+  set volume(v){ v = Math.max(0, Math.min(1, +v)); if (Math.abs(v - this._vol) < 0.005) return; this._vol = v; K7P.setVolume({volume: v}).catch(() => {}); }
+}
+async function nativeScan(silent){
+  let ok = false; try { ok = (await K7P.requestFiles()).granted; } catch {}
+  if (!ok) { toast("Autorise l'accès aux fichiers audio pour lire ton dossier", 5000); return; }
+  const dir = S().nativeDir || "Audiobook"; let r;
+  try { r = await K7P.listTree({path: dir}); } catch(e) { if (!silent) toast((e.message || "Dossier introuvable") + " — change le dossier dans ⚙", 6000); return; }
+  const files = (r.files || []).map(o => new NativeFile(o));
+  if (!files.some(f => AUDIO_RE.test(f.name))) { if (!silent) toast(`Aucun livre audio dans « ${dir} »`); return; }
+  setSetting({nativeScanned: true});
+  const g = filesToGroups(files, true, silent);
+  if (g.length) await importGroups(g); else if (!silent) toast(`Rien de nouveau dans « ${dir} »`);
+}
+const sliceBuf = (blob, a, n) => blob.native ? blob.range(a, n) : blob.slice(a, a+n).arrayBuffer();
 function decText(u8, enc){
   if (enc === 1 || enc === 2) { let le = enc === 1; let o = 0;
     if (u8[0] === 0xFF && u8[1] === 0xFE) { le = true; o = 2; } else if (u8[0] === 0xFE && u8[1] === 0xFF) { le = false; o = 2; }
@@ -583,6 +665,7 @@ async function readMP4(file){
 }
 async function readTags(file){ try { return (await readID3(file)) || (await readMP4(file)) || {}; } catch(e) { console.warn(e); return {}; } }
 function mediaDuration(blob){
+  if (blob.native) return K7P.probe({path: blob.path}).then(r => r.duration || 0).catch(() => 0);
   return new Promise(res => { const a = new Audio(); const u = URL.createObjectURL(blob); let done = false;
     const fin = d => { if (done) return; done = true; URL.revokeObjectURL(u); a.src = ""; res(isFinite(d) && d > 0 ? d : 0); };
     a.preload = "metadata";
@@ -630,7 +713,7 @@ async function importGroups(groups){
     const durations = [], chapters = [];
     for (let i=0;i<audio.length;i++) {
       const f = audio[i]; $("#impMsg").textContent = `${title} — ${f.name}`;
-      await IDB.put("files", `${id}/${i}`, f);
+      if (!f.native) await IDB.put("files", `${id}/${i}`, f);
       const t = i === 0 ? tags : await readTags(f);
       if (!tags.pic && t.pic) tags.pic = t.pic;
       const d = await mediaDuration(f); durations.push(d);
@@ -641,9 +724,10 @@ async function importGroups(groups){
       done++; $("#impBar").style.width = (done/total*100) + "%";
     }
     let cover = g.images?.sort((a,b)=>{ const r = n => /cover|folder|front|pochette|couv/i.test(n.name) ? 0 : 1; return r(a)-r(b); })[0] || tags.pic || null;
+    if (cover?.native) cover = await cover.blob().catch(() => null);
     if (cover) await IDB.put("covers", id, cover);
     const meta = {id, title, author, narrator: reader || tags.composer || "", genre: tags.genre || "", year: (tags.year||"").slice(0,4),
-      files: audio.map(f=>f.name), durations, duration: durations.reduce((a,x)=>a+x,0), chapters, has_cover: !!cover, mtime: Date.now()/1000, rel: g.path || g.name || title, series};
+      files: audio.map(f=>f.name), ...(audio[0].native ? {uris: audio.map(f => f.path)} : {}), durations, duration: durations.reduce((a,x)=>a+x,0), chapters, has_cover: !!cover, mtime: Date.now()/1000, rel: g.path || g.name || title, series};
     await IDB.put("books", id, meta); BOOKS.push({...meta, src:"local"}); made.push(meta);
   }
   await LocalBE.warmCovers(); closeSheet(); render();
@@ -653,7 +737,7 @@ async function importGroups(groups){
 }
 const SKIP_DIR = /^[!.]|statistics|\.thumbnails|^android$/i;
 const SUBPART = /^(cd|disc|disque|dvd|partie|part|vol(ume)?|tome)\s*[-_ ]?\d+$/i;
-function filesToGroups(list, byFolder){
+function filesToGroups(list, byFolder, quiet){
   const files = [...list]; const isA = f => AUDIO_RE.test(f.name) || f.type.startsWith("audio/");
   const audio = files.filter(isA), images = files.filter(f => IMG_RE.test(f.name));
   if (!audio.length) { toast("Aucun fichier audio dans la sélection"); return []; }
@@ -672,7 +756,7 @@ function filesToGroups(list, byFolder){
       for (const f of v.audio) g[k + "/" + f.name] = {name: f.name.replace(/\.[^.]+$/,""), parent: v.name, path: k + "/" + f.name, audio: [f], images: v.images}; }
     const known = new Set(BOOKS.map(b => b.rel));
     const out = Object.values(g); const fresh = out.filter(x => !known.has(x.path));
-    if (out.length !== fresh.length) toast(`${out.length - fresh.length} livre(s) déjà sur l'étagère, ignorés`);
+    if (out.length !== fresh.length && !quiet) toast(`${out.length - fresh.length} livre(s) déjà sur l'étagère, ignorés`);
     return fresh;
   }
   if (audio.length > 1 && audio.every(f => /\.m4b$/i.test(f.name)))
@@ -895,7 +979,7 @@ function tileHTML(b){
 }
 function emptyHTML(){
   return `<div class="empty">Étagère vide.<br>Ajoute un livre audio : ses fichiers (mp3, m4b…) ou un dossier entier.<br><br>
-    <button class="ib acc" data-act="addfiles">＋ Fichiers d'un livre</button><button class="ib" data-act="adddir">＋ Dossier(s)</button></div>`;
+    <button class="ib acc" data-act="addfiles">＋ Fichiers d'un livre</button><button class="ib" data-act="adddir">${NATIVE ? "📂 Charger mon dossier Audiobook" : "＋ Dossier(s)"}</button></div>`;
 }
 document.addEventListener("click", e => {
   const cvb = e.target.closest("[data-cover]"); if (cvb) { e.stopPropagation(); openCoverPicker(BOOKS.find(x => x.id === cvb.dataset.cover)); return; }
@@ -907,7 +991,7 @@ document.addEventListener("click", e => {
   else if (t.dataset.resume) { const b = BOOKS.find(x => x.id === t.dataset.resume); if (player.book?.id === b.id) { showDeck(); play(); } else openBook(b, true); }
   else if (t.dataset.act === "settings") openSettings();
   else if (t.dataset.act === "addfiles") $("#fFiles").click();
-  else if (t.dataset.act === "adddir") $("#fDir").click();
+  else if (t.dataset.act === "adddir") { if (NATIVE) { closeSheet(); nativeScan(false); } else $("#fDir").click(); }
 });
 $("#q").oninput = render;
 $("#sort").onchange = e => { setSetting({sort: e.target.value}); render(); };
@@ -928,7 +1012,7 @@ const openAdd = () => openSheet(`<h3>Ajouter un livre <button class="x" data-clo
 /* ================================================================
    Lecteur
    ================================================================ */
-const player = { audio: new Audio(), book: null, file: 0, cue: 0, lastPause: 0, sleep: null, angL: 0, angR: 0, loading: false, wantPlay: false };
+const player = { audio: NATIVE ? new NativeAudio() : new Audio(), book: null, file: 0, cue: 0, lastPause: 0, sleep: null, angL: 0, angR: 0, loading: false, wantPlay: false };
 const A = player.audio; A.preload = "auto";
 if ("preservesPitch" in A) A.preservesPitch = true;
 
@@ -980,8 +1064,9 @@ function chapterJump(dir){
   if (dir < 0) { if (gpos() - chapStartG(c) > 4 || k === 0) seekG(chapStartG(c)); else seekG(chapStartG(b.chapters[k-1])); }
   else if (b.chapters[k+1]) seekG(chapStartG(b.chapters[k+1]));
 }
+if (NATIVE) A.addEventListener("k7advance", e => { if (!player.book) return; player.file = e.detail; drawTicks(); updateUI(); savePos(); });
 A.addEventListener("ended", async () => {
-  const b = player.book;
+  const b = player.book; if (NATIVE) player.file = b.files.length - 1;
   if (player.file < b.files.length - 1) { await loadFile(player.file + 1, 0, true); }
   else { player.wantPlay = false; setBook(b.id, {status:"termine", pos:{file:0, t:0}, done: Date.now()}); clunk(true); toast("🎉 Livre terminé — rangé dans « Terminés »"); updateUI(); }
 });
@@ -1636,6 +1721,9 @@ async function exportBackup(){
   const data = {app: "K7 Baladeur", v: 1, at: new Date().toISOString(), state: STATE,
     books: BOOKS.map(({src, ...m}) => m), info: Info.map, covers};
   const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+  const fname = `k7-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
+  if (NATIVE) { try { await K7P.saveDownload({name: fname, data: (await blobToData(blob)).split(",")[1]}); setSetting({lastBackup: Date.now()}); toast("Sauvegarde enregistrée dans Téléchargements"); }
+    catch(e) { toast("Sauvegarde impossible : " + (e.message || e), 5000); } return; }
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
   a.download = `k7-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
@@ -1799,6 +1887,7 @@ async function openSettings(){
   openSheet(`<h3>⚙ Réglages <button class="x" data-close>×</button></h3>
    <div class="stitle">＋ Ajouter des livres</div>
    <div class="btns" style="margin:0 0 4px"><button class="ib acc" data-act="addfiles">＋ Fichiers d'un livre</button><button class="ib" data-act="adddir">＋ Tout un dossier</button></div>
+   ${NATIVE ? `<div class="fld"><span>Dossier des livres sur le téléphone</span><input id="stDir" value="${esc(s.nativeDir || "Audiobook")}" placeholder="Audiobook"></div>` : ""}
    <p class="note" style="margin:0">Un sous-dossier = un livre. « Auteur - Titre », [mp3-192], (Série 5), CD1/CD2 sont compris ; les livres déjà présents sont sautés.</p>
    <div class="stitle">🎨 Apparence</div>
    <div class="fld"><span>Habillage du baladeur</span><div class="skins" id="stSkin">${SKIN_LIST.map(([k, n, bg]) => `<button class="skin ${k === (s.skin || "alu88") ? "on" : ""}" data-v="${k}"><i style="background:${bg}"></i>${n}</button>`).join("")}</div></div>
@@ -1838,6 +1927,7 @@ async function openSettings(){
   const bindSeg = (id, key, num = true) => $("#" + id).onclick = e => { const btn = e.target.closest("[data-v]"); if (!btn) return; const v = btn.dataset.v;
     setSetting({[key]: num && !isNaN(+v) ? +v : v}); [...$("#" + id).children].forEach(x => x.classList.toggle("on", x.dataset.v === v)); sfx("press"); redrawDeck(); };
   bindSeg("stSkin", "skin", false); bindSeg("stLcd", "lcd", false); bindSeg("stTile", "tile", false);
+  if ($("#stDir")) $("#stDir").onchange = e => setSetting({nativeDir: e.target.value.trim().replace(/^\/+|\/+$/g, "") || "Audiobook"});
   bindSeg("stBack", "back"); bindSeg("stFwd", "fwd"); bindSeg("stRw", "rewind"); bindSeg("stSleepDef", "sleepDef");
   $("#stSpeed").onclick = e => { const v = e.target.closest("[data-v]")?.dataset.v; if (!v) return; setSetting({speed: +v}); if (!S().speedPerBook) { A.playbackRate = +v; A.defaultPlaybackRate = +v; }
     [...$("#stSpeed").children].forEach(x => x.classList.toggle("on", x.dataset.v === v)); redrawDeck(); };
@@ -1901,9 +1991,13 @@ A.addEventListener("play", () => { if (S().sleepDef && !player.sleep) { player.s
     if (Info.get("b:" + b.id) && !Info.get("b:" + b.id).wd) Info.del("b:" + b.id);
     LocalBE.saveMeta(b);
   }
-  if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
+  if (NATIVE) { try { const lp = await K7P.lastPositions(); // positions gardées par Android si la page a été coupée
+      for (const [id, p] of Object.entries(lp || {})) if (BOOKS.some(b => b.id === id)) { const st = bs(id); if (!(st.last >= p.last)) { st.pos = {file: p.file, t: p.t}; st.last = p.last; } }
+      BE.persist(true); } catch {} }
+  else if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
   A.volume = S().vol ?? 1; applyLook();
   render(); setTimeout(() => fillAll(true), 4000);
+  if (NATIVE && S().nativeScanned) setTimeout(() => nativeScan(true), 1500); // nouveaux livres du dossier : ajoutés tout seuls
   if (S().nag !== false && BOOKS.length && Date.now() - (S().lastBackup || 0) > 14 * 864e5 && Date.now() - (S().backupNag || 0) > 3 * 864e5) {
     setSetting({backupNag: Date.now()}); setTimeout(() => toast(S().lastBackup ? "💾 Pense à refaire une sauvegarde (⚙ → Sauvegarder)" : "💾 Aucune sauvegarde : ⚙ → Sauvegarder, ça prend 2 secondes", 6000), 2500); }
   const last = BOOKS.filter(b => bs(b.id).last).sort((a,b) => bs(b.id).last - bs(a.id).last)[0];
