@@ -473,7 +473,8 @@ const LocalBE = {
     STATE.books ||= {}; STATE.settings ||= {};
     BOOKS = ((await IDB.all("books")) || []).map(b => ({...b, src:"local"})); },
   _t: null,
-  persist(){ clearTimeout(this._t); this._t = setTimeout(() => IDB.put("kv","state",STATE).catch(e => toast("Erreur de sauvegarde : "+e)), 400); },
+  persist(now){ clearTimeout(this._t); const w = () => IDB.put("kv","state",STATE).catch(e => toast("Erreur de sauvegarde : "+e));
+    if (now) w(); else this._t = setTimeout(w, 400); },
   async audioSrc(b, i){ const f = await IDB.get("files", `${b.id}/${i}`); if (!f) throw new Error("Fichier absent");
     if (this.urls.audio) URL.revokeObjectURL(this.urls.audio); return this.urls.audio = URL.createObjectURL(f); },
   coverCache: {},
@@ -963,7 +964,7 @@ async function play(noRewind){
   try { await A.play(); } catch(e) { if (e.name !== "AbortError") toast("Lecture impossible : " + e.message); }
   if (bStatus(player.book) === "a-lire" || bStatus(player.book) === "termine") setBook(player.book.id, {status:"en-cours"});
 }
-function pause(){ player.wantPlay = false; A.pause(); player.lastPause = Date.now(); savePos(); }
+function pause(){ player.wantPlay = false; A.pause(); player.lastPause = Date.now(); savePos(true); }
 function toggle(){ A.paused ? play() : pause(); }
 async function seekG(sec, keepState){
   const b = player.book; if (!b) return; const total = bDur(b); sec = Math.max(0, total ? Math.min(sec, total - 0.5) : sec);
@@ -989,10 +990,19 @@ A.addEventListener("pause", () => { updateUI(); hiss(false); });
 A.addEventListener("ratechange", updateUI);
 let lastSave = 0;
 A.addEventListener("timeupdate", () => { if (Date.now() - lastSave > 5000 && !A.paused) savePos(); checkSleep(); });
-function savePos(){ if (!player.book || player.loading) return; lastSave = Date.now();
-  setBook(player.book.id, {pos: {file: player.file, t: Math.round(A.currentTime*10)/10}, last: Date.now()}); }
-document.addEventListener("visibilitychange", () => { if (document.hidden) savePos(); });
-window.addEventListener("pagehide", savePos);
+function savePos(now){ if (!player.book || player.loading) return; lastSave = Date.now();
+  const pos = {file: player.file, t: Math.round(A.currentTime*10)/10}, last = Date.now();
+  try { localStorage.setItem("k7pos", JSON.stringify({id: player.book.id, pos, last})); } catch {}
+  setBook(player.book.id, {pos, last}); if (now === true) BE.persist(true); }
+document.addEventListener("visibilitychange", () => { if (document.hidden) savePos(true); });
+window.addEventListener("pagehide", () => savePos(true));
+window.addEventListener("freeze", () => savePos(true));
+// lecture coupée par une erreur (fichier, décodage, Android) : on recharge au bon endroit et on relance, 3 essais max
+let retries = 0;
+A.addEventListener("error", () => { if (!player.book || player.loading || !player.wantPlay || retries >= 3) return; retries++;
+  const p = bs(player.book.id).pos || {file: player.file, t: 0};
+  setTimeout(() => loadFile(player.file, p.file === player.file ? p.t : 0, true), 800 * retries); });
+A.addEventListener("playing", () => { retries = 0; });
 
 /* --- maintien FF / REW = défilement rapide --- */
 let holdT = null, cueT = null;
@@ -1879,6 +1889,9 @@ A.addEventListener("play", () => { if (S().sleepDef && !player.sleep) { player.s
 (async function boot(){
   BE = LocalBE;
   try { await BE.load(); } catch(e) { toast("Erreur de chargement : " + e.message, 6000); }
+  try { const k = JSON.parse(localStorage.getItem("k7pos") || "null");
+    if (k && STATE.books && BOOKS.some(b => b.id === k.id)) { const st = bs(k.id);
+      if (!(st.last >= k.last)) { st.pos = k.pos; st.last = k.last; BE.persist(true); } } } catch {}
   await LocalBE.warmCovers(); await Info.loadAll();
   for (const b of BOOKS) { // noms à points/tirets bas importés avant la correction
     if (!/\p{L}[._]\p{L}|_| [-–—] /u.test(b.title + " " + b.author) || /\.\s|\b\p{L}\.\p{L}\./u.test(b.author)) continue;
