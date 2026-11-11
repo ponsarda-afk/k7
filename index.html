@@ -1976,13 +1976,20 @@ A.addEventListener("play", () => { if (S().sleepDef && !player.sleep) { player.s
 /* ================================================================
    Démarrage
    ================================================================ */
+// toute erreur s'affiche à l'écran (sinon invisible dans l'APK)
+const showErr = m => { const t = document.createElement("div"); t.className = "toast"; t.style.cssText = "background:#7c1219;color:#fff;bottom:auto;top:90px;max-width:92vw;white-space:pre-wrap;font-size:12px";
+  t.textContent = "⚠ " + String(m).slice(0, 400); document.body.appendChild(t); setTimeout(() => t.remove(), 12000); };
+window.addEventListener("error", e => showErr((e.message || e.error) + (e.lineno ? " (ligne " + e.lineno + ")" : "")));
+window.addEventListener("unhandledrejection", e => showErr(e.reason?.message || e.reason));
+const timeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("délai dépassé")), ms))]);
 (async function boot(){
-  BE = LocalBE;
+  BE = LocalBE; let step = "chargement";
+  try {
   try { await BE.load(); } catch(e) { toast("Erreur de chargement : " + e.message, 6000); }
   try { const k = JSON.parse(localStorage.getItem("k7pos") || "null");
     if (k && STATE.books && BOOKS.some(b => b.id === k.id)) { const st = bs(k.id);
       if (!(st.last >= k.last)) { st.pos = k.pos; st.last = k.last; BE.persist(true); } } } catch {}
-  await LocalBE.warmCovers(); await Info.loadAll();
+  step = "pochettes"; await LocalBE.warmCovers(); step = "fiches"; await Info.loadAll(); step = "noms";
   for (const b of BOOKS) { // noms à points/tirets bas importés avant la correction
     if (!/\p{L}[._]\p{L}|_| [-–—] /u.test(b.title + " " + b.author) || /\.\s|\b\p{L}\.\p{L}\./u.test(b.author)) continue;
     const raw = String(b.rel || b.title).split("/").pop(), parent = String(b.rel || "").split("/").slice(-2, -1)[0] || "";
@@ -1991,12 +1998,14 @@ A.addEventListener("play", () => { if (S().sleepDef && !player.sleep) { player.s
     if (Info.get("b:" + b.id) && !Info.get("b:" + b.id).wd) Info.del("b:" + b.id);
     LocalBE.saveMeta(b);
   }
-  if (NATIVE) { try { const lp = await K7P.lastPositions(); // positions gardées par Android si la page a été coupée
+  step = "positions"; if (NATIVE) { try { const lp = await timeout(K7P.lastPositions(), 2500); // positions gardées par Android si la page a été coupée
       for (const [id, p] of Object.entries(lp || {})) if (BOOKS.some(b => b.id === id)) { const st = bs(id); if (!(st.last >= p.last)) { st.pos = {file: p.file, t: p.t}; st.last = p.last; } }
       BE.persist(true); } catch {} }
   else if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
-  A.volume = S().vol ?? 1; applyLook();
-  render(); setTimeout(() => fillAll(true), 4000);
+  step = "volume"; try { A.volume = S().vol ?? 1; } catch {}
+  step = "apparence"; applyLook();
+  } catch(e) { showErr("Démarrage (" + step + ") : " + (e.message || e)); }
+  try { render(); } catch(e) { showErr("Affichage : " + (e.message || e)); } setTimeout(() => fillAll(true), 4000);
   if (NATIVE && S().nativeScanned) setTimeout(() => nativeScan(true), 1500); // nouveaux livres du dossier : ajoutés tout seuls
   if (S().nag !== false && BOOKS.length && Date.now() - (S().lastBackup || 0) > 14 * 864e5 && Date.now() - (S().backupNag || 0) > 3 * 864e5) {
     setSetting({backupNag: Date.now()}); setTimeout(() => toast(S().lastBackup ? "💾 Pense à refaire une sauvegarde (⚙ → Sauvegarder)" : "💾 Aucune sauvegarde : ⚙ → Sauvegarder, ça prend 2 secondes", 6000), 2500); }
