@@ -523,7 +523,7 @@ function bProg(b){ if (bStatus(b) === "termine") return 1; const d = bDur(b); re
 const CAP = window.Capacitor, ON_ANDROID = !!CAP?.isNativePlatform?.();
 let NATIVE = ON_ANDROID && (CAP.isPluginAvailable ? CAP.isPluginAvailable("K7Player") : true);
 let K7P = null;
-try { if (NATIVE) K7P = CAP.registerPlugin("K7Player"); } catch(e) { NATIVE = false; k7diag("Lecteur Android : " + e.message); }
+try { if (NATIVE) K7P = CAP.Plugins?.K7Player || CAP.registerPlugin?.("K7Player"); if (NATIVE && !K7P) throw new Error("module absent"); } catch(e) { NATIVE = false; k7diag("Lecteur Android : " + e.message); }
 if (ON_ANDROID && !NATIVE) k7diag("Lecteur Android introuvable → mode navigateur.\nModules présents : " +
   (Object.keys(CAP.Plugins || {}).join(", ") || "aucun") + " · " + (CAP.getPlatform?.() || "?"));
 const b64ToBuf = s => { const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; };
