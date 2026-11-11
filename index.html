@@ -320,6 +320,16 @@ body.flat .case{transform:none!important}body.flat .edge{display:none}body.flat 
 .stitle{margin:18px 0 8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2)}
 @media(prefers-reduced-motion:reduce){.tape:hover{transform:none}}
 </style>
+<script>
+// Détecteur d'erreurs chargé avant l'appli : affiche tout plantage, même au tout premier démarrage
+window.K7ERR = [];
+window.k7diag = function(m){ K7ERR.push(String(m).slice(0, 300)); var d = document.getElementById("k7diag");
+  if (!d) { d = document.createElement("div"); d.id = "k7diag"; d.onclick = function(){ d.remove(); };
+    d.style.cssText = "position:fixed;left:8px;right:8px;top:96px;z-index:99999;background:#7c1219;color:#fff;font:12px/1.35 monospace;padding:10px;border-radius:10px;white-space:pre-wrap;box-shadow:0 6px 20px #0008"; }
+  d.textContent = "⚠ (toucher pour fermer)\n" + K7ERR.join("\n"); (document.body || document.documentElement).appendChild(d); };
+window.addEventListener("error", function(e){ k7diag((e.message || e.error) + (e.lineno ? " — ligne " + e.lineno : "")); });
+window.addEventListener("unhandledrejection", function(e){ k7diag("promesse : " + ((e.reason && e.reason.message) || e.reason)); });
+</script>
 </head>
 <body>
 
@@ -510,8 +520,12 @@ function bProg(b){ if (bStatus(b) === "termine") return 1; const d = bDur(b); re
 /* ================================================================
    Mode APK (Android) : lecteur natif + dossier du téléphone lu sur place
    ================================================================ */
-const NATIVE = !!window.Capacitor?.isNativePlatform?.();
-const K7P = NATIVE ? window.Capacitor.registerPlugin("K7Player") : null;
+const CAP = window.Capacitor, ON_ANDROID = !!CAP?.isNativePlatform?.();
+let NATIVE = ON_ANDROID && (CAP.isPluginAvailable ? CAP.isPluginAvailable("K7Player") : true);
+let K7P = null;
+try { if (NATIVE) K7P = CAP.registerPlugin("K7Player"); } catch(e) { NATIVE = false; k7diag("Lecteur Android : " + e.message); }
+if (ON_ANDROID && !NATIVE) k7diag("Lecteur Android introuvable → mode navigateur.\nModules présents : " +
+  (Object.keys(CAP.Plugins || {}).join(", ") || "aucun") + " · " + (CAP.getPlatform?.() || "?"));
 const b64ToBuf = s => { const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; };
 class NativeFile { // fichier du téléphone, lu par morceaux à la demande : rien n'est copié
   constructor(o){ this.path = o.path; this.name = o.name; this.size = o.size; this.webkitRelativePath = o.rel; this.native = true;
@@ -532,10 +546,11 @@ class NativeAudio extends EventTarget { // remplace <audio> : même interface, l
   constructor(){ super(); this.preload = "auto"; this.preservesPitch = true; this.defaultPlaybackRate = 1; this.error = null;
     this._s = {index: 0, position: 0, duration: 0, playWhenReady: false, playing: false, rate: 1, at: performance.now()};
     this._book = null; this._idx = 0; this._dur = 0; this._vol = 1; this._rate = 1; this._src = ""; this._loading = null;
-    K7P.addListener("state", s => this._upd(s)); K7P.addListener("time", s => this._upd(s));
-    K7P.addListener("advance", e => { this._idx = e.index; this._dur = 0; this.dispatchEvent(new CustomEvent("k7advance", {detail: e.index})); });
-    K7P.addListener("ended", () => { this._s.playWhenReady = false; this._s.playing = false; this.dispatchEvent(new Event("pause")); this.dispatchEvent(new Event("ended")); });
-    K7P.addListener("error", e => { this.error = e; this.dispatchEvent(new Event("error")); });
+    const on = (ev, f) => { try { const p = K7P.addListener(ev, f); p?.catch?.(e => k7diag("écoute " + ev + " : " + (e.message || e))); } catch(e) { k7diag("écoute " + ev + " : " + e.message); } };
+    on("state", s => this._upd(s)); on("time", s => this._upd(s));
+    on("advance", e => { this._idx = e.index; this._dur = 0; this.dispatchEvent(new CustomEvent("k7advance", {detail: e.index})); });
+    on("ended", () => { this._s.playWhenReady = false; this._s.playing = false; this.dispatchEvent(new Event("pause")); this.dispatchEvent(new Event("ended")); });
+    on("error", e => { this.error = e; this.dispatchEvent(new Event("error")); });
     setInterval(() => { if (this._s.playing) this.dispatchEvent(new Event("timeupdate")); }, 500);
   }
   _upd(s){
@@ -1012,7 +1027,8 @@ const openAdd = () => openSheet(`<h3>Ajouter un livre <button class="x" data-clo
 /* ================================================================
    Lecteur
    ================================================================ */
-const player = { audio: NATIVE ? new NativeAudio() : new Audio(), book: null, file: 0, cue: 0, lastPause: 0, sleep: null, angL: 0, angR: 0, loading: false, wantPlay: false };
+const mkAudio = () => { if (NATIVE) try { return new NativeAudio(); } catch(e) { NATIVE = false; k7diag("Lecteur Android : " + e.message); } return new Audio(); };
+const player = { audio: mkAudio(), book: null, file: 0, cue: 0, lastPause: 0, sleep: null, angL: 0, angR: 0, loading: false, wantPlay: false };
 const A = player.audio; A.preload = "auto";
 if ("preservesPitch" in A) A.preservesPitch = true;
 
@@ -1977,10 +1993,7 @@ A.addEventListener("play", () => { if (S().sleepDef && !player.sleep) { player.s
    Démarrage
    ================================================================ */
 // toute erreur s'affiche à l'écran (sinon invisible dans l'APK)
-const showErr = m => { const t = document.createElement("div"); t.className = "toast"; t.style.cssText = "background:#7c1219;color:#fff;bottom:auto;top:90px;max-width:92vw;white-space:pre-wrap;font-size:12px";
-  t.textContent = "⚠ " + String(m).slice(0, 400); document.body.appendChild(t); setTimeout(() => t.remove(), 12000); };
-window.addEventListener("error", e => showErr((e.message || e.error) + (e.lineno ? " (ligne " + e.lineno + ")" : "")));
-window.addEventListener("unhandledrejection", e => showErr(e.reason?.message || e.reason));
+const showErr = m => k7diag(m);
 const timeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("délai dépassé")), ms))]);
 (async function boot(){
   BE = LocalBE; let step = "chargement";
