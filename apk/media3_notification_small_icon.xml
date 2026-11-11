@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icône de barre d'état : une cassette (silhouette blanche, comme l'exige Android) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd"
+        android:pathData="M3,5h18a2,2 0,0 1,2 2v10a2,2 0,0 1,-2 2H3a2,2 0,0 1,-2 -2V7a2,2 0,0 1,2 -2z
+        M6.2,11a1.8,1.8 0,1 0,3.6 0a1.8,1.8 0,1 0,-3.6 0z
+        M14.2,11a1.8,1.8 0,1 0,3.6 0a1.8,1.8 0,1 0,-3.6 0z
+        M5.5,15l1.5,-2h10l1.5,2z"/>
+</vector>

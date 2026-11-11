@@ -1,0 +1,16 @@
+{
+  "appId": "fr.kawaiiapp.k7audiob",
+  "appName": "K7 AudioB",
+  "webDir": "www",
+  "backgroundColor": "#14161f",
+  "android": {
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": true
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "DARK"
+    }
+  }
+}

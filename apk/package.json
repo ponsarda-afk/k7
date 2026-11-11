@@ -1,0 +1,11 @@
+{
+  "name": "k7-audiob-apk",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Emballage Android de K7 AudioB (Capacitor)",
+  "dependencies": {
+    "@capacitor/android": "8.6.0",
+    "@capacitor/cli": "8.6.0",
+    "@capacitor/core": "8.6.0"
+  }
+}
