@@ -54,6 +54,9 @@ jobs:
           cd apk
           node prepare.cjs
           npx cap sync android
+          echo "== contrôle =="; find android/app/src/main/java -name '*.java'; grep -n 'registerPlugin\|^package' android/app/src/main/java/fr/kawaiiapp/k7audiob/MainActivity.java
+          grep -n 'namespace\|applicationId' android/app/build.gradle; grep -n 'activity\|service' android/app/src/main/AndroidManifest.xml
+          cat android/app/src/main/assets/capacitor.plugins.json || true
 
       - name: Compilation
         env:
